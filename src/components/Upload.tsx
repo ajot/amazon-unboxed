@@ -29,6 +29,7 @@ export function Upload({
   const [parsedFiles, setParsedFiles] = useState<ParsedFile[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showDataHelp, setShowDataHelp] = useState(false);
 
   const handleFiles = useCallback(async (files: FileList | File[]) => {
     const csvFiles = Array.from(files).filter(
@@ -130,6 +131,69 @@ export function Upload({
           </motion.div>
           <h1 className="text-5xl font-bold text-white mb-2">Amazon Wrapped</h1>
           <p className="text-gray-400">Your 2025 shopping story awaits</p>
+        </div>
+
+        {/* How to Get Your Data - Collapsible */}
+        <div className="mb-6">
+          <button
+            onClick={() => setShowDataHelp(!showDataHelp)}
+            className="w-full flex items-center justify-center gap-2 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+          >
+            <span>📥</span>
+            <span>Don't have your data yet?</span>
+            <motion.span
+              animate={{ rotate: showDataHelp ? 180 : 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              ▼
+            </motion.span>
+          </button>
+
+          <motion.div
+            initial={false}
+            animate={{
+              height: showDataHelp ? 'auto' : 0,
+              opacity: showDataHelp ? 1 : 0,
+            }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="mt-3 p-4 bg-amazon-navy/50 rounded-xl border border-gray-700/50">
+              <h4 className="text-sm font-semibold text-white mb-3">How to get your Amazon data:</h4>
+              <ol className="space-y-2 text-sm text-gray-300">
+                <li className="flex gap-2">
+                  <span className="text-amazon-orange font-medium">1.</span>
+                  <span>
+                    Go to{' '}
+                    <a
+                      href="https://www.amazon.com/hz/privacy-central/data-requests/preview.html"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-amazon-orange hover:underline"
+                    >
+                      Amazon Privacy Central
+                    </a>
+                  </span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-amazon-orange font-medium">2.</span>
+                  <span>Request <strong className="text-white">"Your Orders"</strong> data</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-amazon-orange font-medium">3.</span>
+                  <span>Wait for Amazon's email (can take a few days)</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-amazon-orange font-medium">4.</span>
+                  <span>Download and unzip the file</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-amazon-orange font-medium">5.</span>
+                  <span>Upload the CSV files below — we'll auto-detect which is which</span>
+                </li>
+              </ol>
+            </div>
+          </motion.div>
         </div>
 
         {/* Saved Data Options */}

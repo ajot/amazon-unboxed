@@ -50,24 +50,24 @@ npm run build
 
 ## How to Get Your Amazon Data
 
-1. Go to [Amazon Privacy Central](https://www.amazon.com/hz/privacy-central/data-requests)
+1. Go to [Amazon Privacy Central](https://www.amazon.com/hz/privacy-central/data-requests/preview.html)
 2. Click **"Request Your Data"**
-3. Select **"Your Orders"** (or request all data)
-4. Wait for Amazon to prepare your export (can take hours to days)
-5. Download the ZIP file when ready
-6. Unzip the file
+3. Select **"Your Orders"**
+4. Wait for Amazon's email (can take a few days)
+5. Download and unzip the file
+6. Upload the CSV files — the app auto-detects which is which
 
 ### Which Files Do You Need?
 
-From the Amazon export, you only need **3 files** (look inside these folders):
+The app uses **3 types of files** from the Amazon export:
 
-| Folder | File to Upload | What It Contains |
-|--------|----------------|------------------|
-| `Retail.OrderHistory.1/` | The CSV inside | Your retail order history |
-| `Digital-Ordering.1/` | The CSV inside | Kindle books, apps, digital purchases |
-| `Retail.OrdersReturned.Payments.1/` | The CSV inside | Your refund records |
+| Folder | What It Contains | Required? |
+|--------|------------------|:---------:|
+| `Retail.OrderHistory.1/` | Your retail order history | **Yes** |
+| `Digital-Ordering.1/` | Kindle books, apps, digital purchases | Optional |
+| `Retail.OrdersReturned.Payments.1/` | Your refund records | Optional |
 
-**That's it!** You can ignore all other folders. The app will automatically detect which file is which based on the column headers.
+**Pro tip:** You can upload all CSV files from the zip — the app auto-detects which is which and ignores files it doesn't recognize.
 
 ---
 
