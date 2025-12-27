@@ -1,0 +1,224 @@
+@import "tailwindcss";
+
+/* Amazon Wrapped Custom Theme */
+@theme {
+  --color-amazon-orange: #FF9900;
+  --color-amazon-dark: #131921;
+  --color-amazon-navy: #232F3E;
+  --color-amazon-success: #067D62;
+  --color-amazon-purple: #6B46C1;
+
+  --font-family-display: "Inter", system-ui, -apple-system, sans-serif;
+}
+
+/* Base styles */
+body {
+  font-family: var(--font-family-display);
+  background-color: var(--color-amazon-dark);
+  color: white;
+  margin: 0;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Custom gradient backgrounds */
+.gradient-orange-navy {
+  background: linear-gradient(135deg, var(--color-amazon-orange) 0%, var(--color-amazon-navy) 100%);
+}
+
+.gradient-dark-green {
+  background: linear-gradient(135deg, var(--color-amazon-dark) 0%, var(--color-amazon-success) 100%);
+}
+
+.gradient-navy-purple {
+  background: linear-gradient(135deg, var(--color-amazon-navy) 0%, var(--color-amazon-purple) 100%);
+}
+
+/* Additional gradient options for slide variety */
+.gradient-teal-dark {
+  background: linear-gradient(135deg, #0d9488 0%, var(--color-amazon-dark) 100%);
+}
+
+.gradient-purple-navy {
+  background: linear-gradient(135deg, #7c3aed 0%, var(--color-amazon-navy) 100%);
+}
+
+.gradient-blue-navy {
+  background: linear-gradient(135deg, #2563eb 0%, var(--color-amazon-navy) 100%);
+}
+
+.gradient-pink-navy {
+  background: linear-gradient(135deg, #db2777 0%, var(--color-amazon-navy) 100%);
+}
+
+.gradient-emerald-dark {
+  background: linear-gradient(135deg, #059669 0%, var(--color-amazon-dark) 100%);
+}
+
+.gradient-indigo-dark {
+  background: linear-gradient(135deg, #4f46e5 0%, var(--color-amazon-dark) 100%);
+}
+
+.gradient-amber-navy {
+  background: linear-gradient(135deg, #d97706 0%, var(--color-amazon-navy) 100%);
+}
+
+.gradient-rose-dark {
+  background: linear-gradient(135deg, #e11d48 0%, var(--color-amazon-dark) 100%);
+}
+
+/* ===========================================
+   SLIDE CONTAINER - Desktop First (Full Screen)
+   =========================================== */
+
+.slide-container {
+  /* Desktop: Full viewport */
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+.slide-content {
+  /* Desktop: Centered content with max-width for readability */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  max-width: 900px;
+  width: 100%;
+  padding: 4rem;
+  padding-bottom: 140px; /* Space for fixed nav bar */
+}
+
+/* Mobile: Card-based layout */
+@media (max-width: 768px) {
+  .slide-container {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    height: auto;
+    min-height: 620px;
+    border-radius: 24px;
+    margin: 0 auto;
+  }
+
+  .slide-content {
+    padding: 2rem;
+    padding-bottom: 2rem;
+    max-width: 100%;
+  }
+}
+
+/* Small mobile */
+@media (max-width: 480px) {
+  .slide-container {
+    max-width: 100%;
+    min-height: 580px;
+    border-radius: 20px;
+  }
+
+  .slide-content {
+    padding: 1.5rem;
+  }
+}
+
+/* ===========================================
+   TYPOGRAPHY - Desktop First
+   =========================================== */
+
+.stat-huge {
+  font-size: 10rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.stat-large {
+  font-size: 5rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .stat-huge {
+    font-size: 7rem;
+  }
+
+  .stat-large {
+    font-size: 4rem;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .stat-huge {
+    font-size: 5rem;
+  }
+
+  .stat-large {
+    font-size: 3rem;
+  }
+}
+
+/* Small mobile */
+@media (max-width: 480px) {
+  .stat-huge {
+    font-size: 3.5rem;
+  }
+
+  .stat-large {
+    font-size: 2.25rem;
+  }
+}
+
+/* ===========================================
+   NAVIGATION BAR - Desktop
+   =========================================== */
+
+.slide-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+  padding: 1.5rem 2rem;
+  background: linear-gradient(to top, rgba(19, 25, 33, 0.95) 0%, transparent 100%);
+  z-index: 50;
+}
+
+.slide-nav-inner {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+/* Mobile: Simpler nav */
+@media (max-width: 768px) {
+  .slide-nav {
+    position: relative;
+    background: transparent;
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  .slide-nav-inner {
+    gap: 1rem;
+  }
+}
+

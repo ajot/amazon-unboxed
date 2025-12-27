@@ -1,0 +1,13 @@
+export { SlideWrapper } from './SlideWrapper';
+export { WelcomeSlide } from './WelcomeSlide';
+export { TotalSpendSlide } from './TotalSpendSlide';
+export { ByTheNumbersSlide } from './ByTheNumbersSlide';
+export { OrderCountSlide } from './OrderCountSlide';
+export { PeakMonthSlide } from './PeakMonthSlide';
+export { FavoriteDaySlide } from './FavoriteDaySlide';
+export { TopItemsSlide } from './TopItemsSlide';
+export { BigTicketsSlide } from './BigTicketsSlide';
+export { DigitalLifeSlide } from './DigitalLifeSlide';
+export { BooksSlide } from './BooksSlide';
+export { ReturnsSlide } from './ReturnsSlide';
+export { SummarySlide } from './SummarySlide';
