@@ -4,6 +4,7 @@ import type {
   ProcessedRefund,
   WrappedStats,
   MonthlyData,
+  YearlyData,
   EnrichedRefund,
   ProcessedData,
   CalculateStatsResult,
@@ -77,6 +78,23 @@ export function isLikelyBook(productName: string, publisher?: string): boolean {
 /**
  * Process retail order rows into normalized orders
  */
+/**
+ * Extract currency from row, checking multiple possible column names
+ */
+function extractCurrency(row: Record<string, unknown>): string {
+  // Check various possible column names for currency
+  const possibleKeys = ['Currency', 'currency', 'Currency Code', 'CurrencyCode', 'Ordering Currency Code'];
+  for (const key of possibleKeys) {
+    if (key in row && typeof row[key] === 'string' && row[key]) {
+      const currency = (row[key] as string).trim().toUpperCase();
+      console.log('[Currency] Found:', key, '=', currency);
+      return currency;
+    }
+  }
+  console.log('[Currency] Not found, defaulting to USD. Row keys:', Object.keys(row));
+  return 'USD';
+}
+
 function processRetailOrders(data: unknown[]): ProcessedOrder[] {
   return data
     .filter(isRetailOrderRow)
@@ -92,7 +110,7 @@ function processRetailOrders(data: unknown[]): ProcessedOrder[] {
         productName: row['Product Name'] || 'Unknown Item',
         quantity: parseInt(row['Quantity']) || 1,
         asin: row['ASIN'],
-        currency: row['Currency'] || 'USD',
+        currency: extractCurrency(row as unknown as Record<string, unknown>),
         isDigital: false,
       };
     })
@@ -153,7 +171,7 @@ function processRefunds(data: unknown[]): ProcessedRefund[] {
         orderId: row['OrderID'],
         amountRefunded: parseCurrency(row['AmountRefunded']),
         refundDate,
-        currency: row['Currency'] || 'USD',
+        currency: extractCurrency(row as unknown as Record<string, unknown>),
       };
     })
     .filter((refund): refund is ProcessedRefund => refund !== null);
@@ -196,6 +214,117 @@ export function getAvailableYears(files: ParsedFile[]): number[] {
   }
 
   return Array.from(years).sort((a, b) => b - a);
+}
+
+/**
+ * Get primary currency for a set of orders (by order count)
+ */
+function getPrimaryCurrency(orders: ProcessedOrder[]): string {
+  const currencyCount = new Map<string, number>();
+  for (const order of orders) {
+    const currency = order.currency || 'USD';
+    currencyCount.set(currency, (currencyCount.get(currency) || 0) + 1);
+  }
+  let primaryCurrency = 'USD';
+  let maxCount = 0;
+  for (const [currency, count] of currencyCount) {
+    if (count > maxCount) {
+      primaryCurrency = currency;
+      maxCount = count;
+    }
+  }
+  return primaryCurrency;
+}
+
+/**
+ * Calculate yearly aggregated data from all parsed files (no year filtering)
+ * Returns years sorted descending (most recent first)
+ * Spending totals only include primary currency per year
+ */
+export function calculateYearlyData(files: ParsedFile[]): YearlyData[] {
+  // Process ALL orders from files (no filtering)
+  let allOrders: ProcessedOrder[] = [];
+
+  for (const file of files) {
+    switch (file.type) {
+      case 'retail_orders':
+        allOrders = [...allOrders, ...processRetailOrders(file.data)];
+        break;
+      case 'digital_items':
+        allOrders = [...allOrders, ...processDigitalOrders(file.data)];
+        break;
+    }
+  }
+
+  // Dedupe orders by orderId + productName
+  const uniqueOrderKeys = new Set<string>();
+  const dedupedOrders = allOrders.filter((order) => {
+    const key = `${order.orderId}-${order.asin || order.productName}`;
+    if (uniqueOrderKeys.has(key)) return false;
+    uniqueOrderKeys.add(key);
+    return true;
+  });
+
+  // Group orders by year
+  const ordersByYear = new Map<number, ProcessedOrder[]>();
+  for (const order of dedupedOrders) {
+    const year = order.orderDate.getFullYear();
+    if (!ordersByYear.has(year)) {
+      ordersByYear.set(year, []);
+    }
+    ordersByYear.get(year)!.push(order);
+  }
+
+  // Build yearly data array - filter spending to primary currency per year
+  const yearlyData: YearlyData[] = Array.from(ordersByYear.entries())
+    .map(([year, orders]) => {
+      const primaryCurrency = getPrimaryCurrency(orders);
+      const primaryOrders = orders.filter(o => (o.currency || 'USD') === primaryCurrency);
+      return {
+        year,
+        totalSpend: primaryOrders.reduce((sum, o) => sum + o.totalOwed, 0),
+        orderCount: orders.length,
+        orders: orders.sort((a, b) => b.orderDate.getTime() - a.orderDate.getTime()),
+        primaryCurrency,
+      };
+    })
+    .sort((a, b) => a.year - b.year); // Sort ascending (oldest first)
+
+  return yearlyData;
+}
+
+/**
+ * Calculate yearly data from already-processed orders
+ * Used as fallback when parsedFiles is empty (e.g., restored from localStorage)
+ * Spending totals only include primary currency per year
+ */
+export function calculateYearlyDataFromOrders(orders: ProcessedOrder[]): YearlyData[] {
+  // Group orders by year
+  const ordersByYear = new Map<number, ProcessedOrder[]>();
+  for (const order of orders) {
+    const year = order.orderDate.getFullYear();
+    if (!ordersByYear.has(year)) {
+      ordersByYear.set(year, []);
+    }
+    ordersByYear.get(year)!.push(order);
+  }
+
+  // Build yearly data array - filter spending to primary currency per year
+  const yearlyData: YearlyData[] = Array.from(ordersByYear.entries())
+    .map(([year, yearOrders]) => {
+      const primaryCurrency = getPrimaryCurrency(yearOrders);
+      const primaryOrders = yearOrders.filter(o => (o.currency || 'USD') === primaryCurrency);
+      return {
+        year,
+        totalSpend: primaryOrders.reduce((sum, o) => sum + o.totalOwed, 0),
+        orderCount: yearOrders.length,
+        orders: yearOrders.sort((a, b) => b.orderDate.getTime() - a.orderDate.getTime()),
+        primaryCurrency,
+      };
+    })
+    .sort((a, b) => a.year - b.year); // Sort ascending (oldest first)
+
+  return yearlyData;
 }
 
 /**
@@ -266,41 +395,72 @@ export function calculateStatsWithData(files: ParsedFile[], targetYear: number):
     }
   }
 
-  // Filter to target year
-  const filteredOrders = filterToTargetYear(allOrders, targetYear);
-  const filteredRefunds = filterToTargetYear(allRefunds, targetYear);
-
-  // Dedupe orders by orderId + productName (same item in same order)
+  // Dedupe ALL orders by orderId + productName (same item in same order)
   const uniqueOrderKeys = new Set<string>();
-  const dedupedOrders = filteredOrders.filter((order) => {
+  const dedupedAllOrders = allOrders.filter((order) => {
     const key = `${order.orderId}-${order.asin || order.productName}`;
     if (uniqueOrderKeys.has(key)) return false;
     uniqueOrderKeys.add(key);
     return true;
   });
 
+  // Filter to target year
+  const filteredOrders = filterToTargetYear(dedupedAllOrders, targetYear);
+  const filteredRefunds = filterToTargetYear(allRefunds, targetYear);
+
+  // Use filtered orders for the rest of calculations
+  const dedupedOrders = filteredOrders;
+
+  // Currency breakdown (calculate early to filter spending)
+  const currencyMap = new Map<string, { amount: number; orderCount: number }>();
+  for (const order of dedupedOrders) {
+    const currency = order.currency || 'USD';
+    if (!currencyMap.has(currency)) {
+      currencyMap.set(currency, { amount: 0, orderCount: 0 });
+    }
+    const data = currencyMap.get(currency)!;
+    data.amount += order.totalOwed;
+    data.orderCount += 1;
+  }
+  const currencyBreakdown = Array.from(currencyMap.entries())
+    .map(([currency, data]) => ({ currency, ...data }))
+    .sort((a, b) => b.orderCount - a.orderCount);
+  const primaryCurrency = currencyBreakdown.length > 0 ? currencyBreakdown[0].currency : 'USD';
+  const hasMixedCurrencies = currencyBreakdown.length > 1;
+
+  console.log(`[Currency] Year ${targetYear} breakdown:`, currencyBreakdown, `Primary: ${primaryCurrency}, hasMixed: ${hasMixedCurrencies}`);
+
   // Split by type
   const retailOrders = dedupedOrders.filter((o) => !o.isDigital);
   const digitalOrders = dedupedOrders.filter((o) => o.isDigital);
 
-  // Basic spending stats
-  const totalGrossSpend = dedupedOrders.reduce((sum, o) => sum + o.totalOwed, 0);
-  const totalRefunds = filteredRefunds.reduce((sum, r) => sum + r.amountRefunded, 0);
+  // For spending stats, only use primary currency orders to avoid mixing currencies
+  const primaryCurrencyOrders = hasMixedCurrencies
+    ? dedupedOrders.filter((o) => (o.currency || 'USD') === primaryCurrency)
+    : dedupedOrders;
+  const primaryCurrencyRefunds = hasMixedCurrencies
+    ? filteredRefunds.filter((r) => (r.currency || 'USD') === primaryCurrency)
+    : filteredRefunds;
+
+  // Basic spending stats (primary currency only when mixed)
+  const totalGrossSpend = primaryCurrencyOrders.reduce((sum, o) => sum + o.totalOwed, 0);
+  const totalRefunds = primaryCurrencyRefunds.reduce((sum, r) => sum + r.amountRefunded, 0);
   const netSpend = totalGrossSpend - totalRefunds;
 
   // Item counts
   const totalItems = dedupedOrders.reduce((sum, o) => sum + o.quantity, 0);
   const totalOrders = new Set(dedupedOrders.map((o) => o.orderId)).size;
 
-  // Averages
+  // Averages (primary currency for spending, all orders for counts)
+  const primaryItems = primaryCurrencyOrders.reduce((sum, o) => sum + o.quantity, 0);
   const monthlyAverage = netSpend / 12;
-  const averageItemCost = totalItems > 0 ? totalGrossSpend / totalItems : 0;
+  const averageItemCost = primaryItems > 0 ? totalGrossSpend / primaryItems : 0;
   const averageItemsPerMonth = totalItems / 12;
   const ordersPerDay = totalOrders / 365;
 
-  // Monthly spending
+  // Monthly spending (primary currency only when mixed)
   const monthlySpendingMap = new Map<number, number>();
-  for (const order of dedupedOrders) {
+  for (const order of primaryCurrencyOrders) {
     const month = order.orderDate.getMonth();
     monthlySpendingMap.set(month, (monthlySpendingMap.get(month) || 0) + order.totalOwed);
   }
@@ -309,11 +469,11 @@ export function calculateStatsWithData(files: ParsedFile[], targetYear: number):
     amount: monthlySpendingMap.get(idx) || 0,
   }));
 
-  // Peak month
+  // Peak month (primary currency)
   let peakMonth = { month: 'January', amount: 0, orderCount: 0 };
   for (const [monthIdx, amount] of monthlySpendingMap) {
     if (amount > peakMonth.amount) {
-      const orderCount = dedupedOrders.filter(
+      const orderCount = primaryCurrencyOrders.filter(
         (o) => o.orderDate.getMonth() === monthIdx
       ).length;
       peakMonth = { month: MONTHS_FULL[monthIdx], amount, orderCount };
@@ -356,8 +516,11 @@ export function calculateStatsWithData(files: ParsedFile[], targetYear: number):
     .slice(0, LIMITS.topExpensive)
     .map((o) => ({ name: o.productName, price: o.unitPrice }));
 
-  // Digital stats
-  const digitalSpend = digitalOrders.reduce((sum, o) => sum + o.totalOwed, 0);
+  // Digital stats (primary currency for spend)
+  const primaryDigitalOrders = hasMixedCurrencies
+    ? digitalOrders.filter((o) => (o.currency || 'USD') === primaryCurrency)
+    : digitalOrders;
+  const digitalSpend = primaryDigitalOrders.reduce((sum, o) => sum + o.totalOwed, 0);
   const digitalItemCount = digitalOrders.reduce((sum, o) => sum + o.quantity, 0);
 
   // Top publisher
@@ -379,13 +542,16 @@ export function calculateStatsWithData(files: ParsedFile[], targetYear: number):
     }
   }
 
-  // Book stats (physical + digital)
+  // Book stats (physical + digital, primary currency for spend)
   const allBooks = dedupedOrders.filter((o) => isLikelyBook(o.productName, o.publisher));
   const kindleBooks = allBooks.filter((o) => o.isDigital);
   const physicalBooks = allBooks.filter((o) => !o.isDigital);
+  const primaryBooks = hasMixedCurrencies
+    ? allBooks.filter((o) => (o.currency || 'USD') === primaryCurrency)
+    : allBooks;
 
   const bookCount = allBooks.reduce((sum, o) => sum + o.quantity, 0);
-  const bookSpend = allBooks.reduce((sum, o) => sum + o.totalOwed, 0);
+  const bookSpend = primaryBooks.reduce((sum, o) => sum + o.totalOwed, 0);
   const kindleBookCount = kindleBooks.reduce((sum, o) => sum + o.quantity, 0);
   const physicalBookCount = physicalBooks.reduce((sum, o) => sum + o.quantity, 0);
 
@@ -450,6 +616,9 @@ export function calculateStatsWithData(files: ParsedFile[], targetYear: number):
     returnCount,
     totalRefundAmount,
     returnRate,
+    primaryCurrency,
+    hasMixedCurrencies,
+    currencyBreakdown,
   };
 
   // Build monthly data for exploration
@@ -492,5 +661,5 @@ export function calculateStatsWithData(files: ParsedFile[], targetYear: number):
     monthlyData,
   };
 
-  return { stats, processedData };
+  return { stats, processedData, allOrders: dedupedAllOrders, allRefunds };
 }

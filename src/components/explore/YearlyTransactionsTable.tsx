@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import type { MonthlyData } from '../../types';
+import type { YearlyData } from '../../types';
 import { formatCurrency } from '../../utils/dataProcessor';
 import { formatTableDate, sortBy, type SortDirection } from '../../utils/tableUtils';
 
@@ -20,23 +20,23 @@ function formatWithCurrency(amount: number, currency?: string): string {
   }
 }
 
-interface MonthlyTransactionsTableProps {
-  monthData: MonthlyData;
+interface YearlyTransactionsTableProps {
+  yearData: YearlyData;
   onClose: () => void;
 }
 
 type SortKey = 'orderDate' | 'productName' | 'unitPrice' | 'quantity';
 
-export function MonthlyTransactionsTable({
-  monthData,
+export function YearlyTransactionsTable({
+  yearData,
   onClose,
-}: MonthlyTransactionsTableProps) {
+}: YearlyTransactionsTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>('orderDate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   const sortedOrders = useMemo(() => {
-    return sortBy(monthData.orders, sortKey, sortDirection);
-  }, [monthData.orders, sortKey, sortDirection]);
+    return sortBy(yearData.orders, sortKey, sortDirection);
+  }, [yearData.orders, sortKey, sortDirection]);
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -63,10 +63,16 @@ export function MonthlyTransactionsTable({
       <div className="p-4 border-b border-white/10 flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-white">
-            {monthData.month} Transactions
+            {yearData.year} Transactions
           </h3>
           <p className="text-sm text-gray-400">
-            {monthData.orderCount} orders · {formatCurrency(monthData.totalSpend)}
+            {yearData.orderCount} orders · {formatCurrency(yearData.totalSpend)}
+            {yearData.primaryCurrency && yearData.primaryCurrency !== 'USD' && (
+              <span className="ml-2 text-purple-300">({yearData.primaryCurrency} only)</span>
+            )}
+            {yearData.primaryCurrency === 'USD' && yearData.orders.some(o => o.currency && o.currency !== 'USD') && (
+              <span className="ml-2 text-gray-500">(USD only)</span>
+            )}
           </p>
         </div>
         <button
@@ -77,9 +83,9 @@ export function MonthlyTransactionsTable({
         </button>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto max-h-96">
         <table className="w-full">
-          <thead>
+          <thead className="sticky top-0 bg-amazon-navy">
             <tr className="border-b border-white/10">
               <th
                 onClick={() => handleSort('orderDate')}
@@ -117,7 +123,7 @@ export function MonthlyTransactionsTable({
                 key={`${order.orderId}-${order.asin}-${idx}`}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: idx * 0.02 }}
+                transition={{ delay: Math.min(idx * 0.02, 0.5) }}
                 className="border-b border-white/5 hover:bg-white/5 transition-colors"
               >
                 <td className="p-4 text-sm text-white whitespace-nowrap">
@@ -156,9 +162,9 @@ export function MonthlyTransactionsTable({
         </table>
       </div>
 
-      {monthData.orders.length === 0 && (
+      {yearData.orders.length === 0 && (
         <div className="p-8 text-center text-gray-400">
-          No transactions for this month
+          No transactions for this year
         </div>
       )}
     </motion.div>

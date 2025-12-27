@@ -11,13 +11,30 @@ import {
   type SortDirection,
 } from '../../utils/tableUtils';
 
+// Format currency with proper symbol based on currency code
+function formatWithCurrency(amount: number, currency?: string): string {
+  const currencyCode = currency || 'USD';
+  try {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currencyCode,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    // Fallback if currency code is invalid
+    return `${currencyCode} ${amount.toLocaleString()}`;
+  }
+}
+
 interface AllTransactionsViewProps {
   orders: ProcessedOrder[];
+  primaryCurrency?: string;
 }
 
 type SortKey = 'orderDate' | 'productName' | 'totalOwed' | 'quantity';
 
-export function AllTransactionsView({ orders }: AllTransactionsViewProps) {
+export function AllTransactionsView({ orders, primaryCurrency = 'USD' }: AllTransactionsViewProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('orderDate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
@@ -60,9 +77,11 @@ export function AllTransactionsView({ orders }: AllTransactionsViewProps) {
       <div className="bg-amazon-navy/50 rounded-xl p-6 mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-amazon-orange text-sm">All Transactions</p>
+            <p className="text-amazon-orange text-sm">All Transactions ({primaryCurrency} only)</p>
             <p className="text-3xl font-bold text-amazon-orange">
-              {formatCurrency(orders.reduce((sum, o) => sum + o.totalOwed, 0))}
+              {formatCurrency(orders
+                .filter(o => (o.currency || 'USD') === primaryCurrency)
+                .reduce((sum, o) => sum + o.totalOwed, 0))}
             </p>
           </div>
           <div className="text-right">
@@ -149,13 +168,22 @@ export function AllTransactionsView({ orders }: AllTransactionsViewProps) {
                           Digital
                         </span>
                       )}
+                      {order.currency && order.currency !== 'USD' && (
+                        <span className="text-xs px-2 py-0.5 bg-purple-500/30 text-purple-300 rounded-full font-medium">
+                          {order.currency}
+                        </span>
+                      )}
                       <span className="text-xs text-gray-500">
                         {order.orderId}
                       </span>
                     </div>
                   </td>
-                  <td className="p-4 text-sm text-white text-right whitespace-nowrap">
-                    {formatCurrency(order.totalOwed)}
+                  <td className={`p-4 text-sm text-right whitespace-nowrap ${
+                    order.currency && order.currency !== 'USD'
+                      ? 'text-purple-300'
+                      : 'text-white'
+                  }`}>
+                    {formatWithCurrency(order.totalOwed, order.currency)}
                   </td>
                   <td className="p-4 text-sm text-white text-right">
                     {order.quantity}

@@ -1,19 +1,26 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { WrappedStats, ProcessedData } from '../../types';
+import type { WrappedStats, ProcessedData, ParsedFile, ProcessedOrder, YearlyData } from '../../types';
+import type { StoredYearlyData } from '../../utils/localStorage';
 import { MonthlySpendingChart } from './MonthlySpendingChart';
 import { MonthlyTransactionsTable } from './MonthlyTransactionsTable';
+import { YearlySpendingChart } from './YearlySpendingChart';
+import { YearlyTransactionsTable } from './YearlyTransactionsTable';
 import { AllTransactionsView } from './AllTransactionsView';
 import { RefundsView } from './RefundsView';
 import { BooksView } from './BooksView';
-import { formatCurrency, formatNumber } from '../../utils/dataProcessor';
+import { formatCurrency, formatNumber, calculateYearlyData, calculateYearlyDataFromOrders } from '../../utils/dataProcessor';
 
-type TabType = 'overview' | 'transactions' | 'books' | 'refunds';
+type TabType = 'overview' | 'transactions' | 'books' | 'refunds' | 'allyears';
 
 interface ExploreDashboardProps {
   stats: WrappedStats;
   processedData: ProcessedData;
+  parsedFiles: ParsedFile[];
+  allOrders: ProcessedOrder[];
+  storedYearlyData?: StoredYearlyData[];
   onBack: () => void;
+  onReset: () => void;
   year: number;
   availableYears: number[];
   onYearChange: (year: number) => void;
@@ -22,16 +29,41 @@ interface ExploreDashboardProps {
 export function ExploreDashboard({
   stats,
   processedData,
+  parsedFiles,
+  allOrders,
+  storedYearlyData,
   onBack,
+  onReset,
   year,
   availableYears,
   onYearChange,
 }: ExploreDashboardProps) {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+  const [selectedYearIndex, setSelectedYearIndex] = useState<number | null>(null);
+
+  // Calculate yearly data - use allOrders (contains all years), fallback to parsedFiles, then storedYearlyData
+  const yearlyData = useMemo((): YearlyData[] => {
+    if (allOrders.length > 0) {
+      return calculateYearlyDataFromOrders(allOrders);
+    }
+    if (parsedFiles.length > 0) {
+      return calculateYearlyData(parsedFiles);
+    }
+    // Fallback: use stored yearly summary (has totals but no transactions)
+    if (storedYearlyData && storedYearlyData.length > 0) {
+      return storedYearlyData;
+    }
+    // Last fallback: use current year's orders only
+    return calculateYearlyDataFromOrders(processedData.orders);
+  }, [allOrders, parsedFiles, storedYearlyData, processedData.orders]);
 
   const handleMonthClick = useCallback((monthIndex: number) => {
     setSelectedMonth((prev) => (prev === monthIndex ? null : monthIndex));
+  }, []);
+
+  const handleYearClick = useCallback((yearIndex: number) => {
+    setSelectedYearIndex((prev) => (prev === yearIndex ? null : yearIndex));
   }, []);
 
   const tabs: { id: TabType; label: string }[] = [
@@ -39,6 +71,7 @@ export function ExploreDashboard({
     { id: 'transactions', label: 'All Transactions' },
     { id: 'books', label: 'Books' },
     { id: 'refunds', label: 'Refunds' },
+    { id: 'allyears', label: 'All Years' },
   ];
 
   return (
@@ -74,9 +107,13 @@ export function ExploreDashboard({
                 </select>
               )}
               <div className="text-right">
-                <p className="text-sm text-gray-400">{year} Summary</p>
+                <p className="text-sm text-gray-400">
+                  {activeTab === 'allyears' ? 'All Years' : `${year} Summary`}
+                </p>
                 <p className="text-lg font-semibold text-amazon-orange">
-                  {formatCurrency(stats.netSpend)}
+                  {activeTab === 'allyears'
+                    ? formatCurrency(yearlyData.reduce((sum, y) => sum + y.totalSpend, 0))
+                    : formatCurrency(stats.netSpend)}
                 </p>
               </div>
             </div>
@@ -90,6 +127,7 @@ export function ExploreDashboard({
                 onClick={() => {
                   setActiveTab(tab.id);
                   setSelectedMonth(null);
+                  setSelectedYearIndex(null);
                 }}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   activeTab === tab.id
@@ -178,7 +216,7 @@ export function ExploreDashboard({
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.2 }}
             >
-              <AllTransactionsView orders={processedData.orders} />
+              <AllTransactionsView orders={processedData.orders} primaryCurrency={stats.primaryCurrency} />
             </motion.div>
           )}
 
@@ -209,7 +247,52 @@ export function ExploreDashboard({
               />
             </motion.div>
           )}
+
+          {activeTab === 'allyears' && (
+            <motion.div
+              key="allyears"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.2 }}
+            >
+              {/* Yearly Chart */}
+              <div className="bg-amazon-navy/30 rounded-xl p-6 mb-6">
+                <h2 className="text-lg font-semibold text-white mb-4">
+                  Spending by Year
+                </h2>
+                <p className="text-sm text-gray-400 mb-4">
+                  Click on a year to see transactions
+                </p>
+                <YearlySpendingChart
+                  yearlyData={yearlyData}
+                  selectedYear={selectedYearIndex}
+                  onYearClick={handleYearClick}
+                />
+              </div>
+
+              {/* Yearly Transactions Table (when year selected) */}
+              <AnimatePresence>
+                {selectedYearIndex !== null && yearlyData[selectedYearIndex] && (
+                  <YearlyTransactionsTable
+                    yearData={yearlyData[selectedYearIndex]}
+                    onClose={() => setSelectedYearIndex(null)}
+                  />
+                )}
+              </AnimatePresence>
+            </motion.div>
+          )}
         </AnimatePresence>
+
+        {/* Start Over button */}
+        <div className="flex justify-end mt-12 mb-8">
+          <button
+            onClick={onReset}
+            className="px-4 py-2 text-sm text-red-400 border border-red-400/30 hover:bg-red-400/10 rounded-lg transition-colors"
+          >
+            Start Over
+          </button>
+        </div>
       </main>
     </div>
   );

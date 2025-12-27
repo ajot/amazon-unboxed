@@ -10,8 +10,9 @@ import {
   getStoredData,
   storeData,
   clearStoredData,
+  type StoredYearlyData,
 } from './utils/localStorage';
-import type { ParsedFile, WrappedStats, ProcessedData } from './types';
+import type { ParsedFile, WrappedStats, ProcessedData, ProcessedOrder, ProcessedRefund, EnrichedRefund } from './types';
 import './index.css';
 
 type AppView = 'upload' | 'slides' | 'emailGate' | 'explore';
@@ -23,8 +24,11 @@ function App() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [hasSavedData, setHasSavedData] = useState(false);
   const [parsedFiles, setParsedFiles] = useState<ParsedFile[]>([]);
+  const [allOrders, setAllOrders] = useState<ProcessedOrder[]>([]);
+  const [allRefunds, setAllRefunds] = useState<ProcessedRefund[]>([]);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [storedYearlyData, setStoredYearlyData] = useState<StoredYearlyData[] | undefined>(undefined);
 
   // Check for stored email and data on mount
   useEffect(() => {
@@ -49,10 +53,18 @@ function App() {
       setSelectedYear(targetYear);
 
       const result = calculateStatsWithData(files, targetYear);
+      console.log('[App] Initial processing:', {
+        targetYear,
+        processedDataOrders: result.processedData.orders.length,
+        allOrders: result.allOrders.length,
+        allRefunds: result.allRefunds.length,
+      });
       setStats(result.stats);
       setProcessedData(result.processedData);
+      setAllOrders(result.allOrders);
+      setAllRefunds(result.allRefunds);
       // Save to localStorage
-      storeData(result.stats, result.processedData, files, years, targetYear);
+      storeData(result.stats, result.processedData, result.allOrders, result.allRefunds, files, years, targetYear);
       setHasSavedData(true);
       setView('slides');
     } catch (error) {
@@ -61,23 +73,176 @@ function App() {
   }, []);
 
   const handleYearChange = useCallback((year: number) => {
-    if (parsedFiles.length === 0) return;
+    if (parsedFiles.length === 0 && allOrders.length === 0) return;
     try {
       setSelectedYear(year);
-      const result = calculateStatsWithData(parsedFiles, year);
-      setStats(result.stats);
-      setProcessedData(result.processedData);
+
+      let stats: WrappedStats;
+      let processedData: ProcessedData;
+
+      if (parsedFiles.length > 0) {
+        // Have parsed files - use full calculation
+        const result = calculateStatsWithData(parsedFiles, year);
+        stats = result.stats;
+        processedData = result.processedData;
+      } else if (allOrders.length > 0) {
+        // No parsed files, but have allOrders - filter manually
+        const yearOrders = allOrders.filter(o => o.orderDate.getFullYear() === year);
+        const yearRefunds = allRefunds.filter(r => r.refundDate.getFullYear() === year);
+        const MONTHS_FULL = ['January', 'February', 'March', 'April', 'May', 'June',
+          'July', 'August', 'September', 'October', 'November', 'December'];
+        const DAYS_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+        // Build monthly data with correct MonthlyData interface
+        const monthlyData = Array.from({ length: 12 }, (_, idx) => {
+          const monthOrders = yearOrders.filter(o => o.orderDate.getMonth() === idx);
+          return {
+            month: MONTHS_FULL[idx],
+            monthIndex: idx,
+            totalSpend: monthOrders.reduce((sum, o) => sum + o.totalOwed, 0),
+            orderCount: monthOrders.length,
+            orders: monthOrders,
+          };
+        });
+
+        // Build enriched refunds by matching with orders
+        const orderByIdMap = new Map<string, ProcessedOrder>();
+        for (const order of yearOrders) {
+          if (!orderByIdMap.has(order.orderId)) {
+            orderByIdMap.set(order.orderId, order);
+          }
+        }
+        const enrichedRefunds: EnrichedRefund[] = yearRefunds.map(refund => {
+          const originalOrder = orderByIdMap.get(refund.orderId);
+          return {
+            ...refund,
+            originalOrder,
+            productName: originalOrder?.productName,
+          };
+        });
+
+        // Currency breakdown (calculate first to filter spending)
+        const currencyMap = new Map<string, { amount: number; orderCount: number }>();
+        for (const order of yearOrders) {
+          const currency = order.currency || 'USD';
+          if (!currencyMap.has(currency)) {
+            currencyMap.set(currency, { amount: 0, orderCount: 0 });
+          }
+          const data = currencyMap.get(currency)!;
+          data.amount += order.totalOwed;
+          data.orderCount += 1;
+        }
+        const currencyBreakdown = Array.from(currencyMap.entries())
+          .map(([currency, data]) => ({ currency, ...data }))
+          .sort((a, b) => b.orderCount - a.orderCount);
+        const primaryCurrency = currencyBreakdown.length > 0 ? currencyBreakdown[0].currency : 'USD';
+        const hasMixedCurrencies = currencyBreakdown.length > 1;
+
+        // Filter to primary currency for spending stats when mixed
+        const primaryOrders = hasMixedCurrencies
+          ? yearOrders.filter(o => (o.currency || 'USD') === primaryCurrency)
+          : yearOrders;
+        const primaryRefunds = hasMixedCurrencies
+          ? yearRefunds.filter(r => (r.currency || 'USD') === primaryCurrency)
+          : yearRefunds;
+
+        processedData = {
+          orders: yearOrders,
+          refunds: yearRefunds,
+          enrichedRefunds,
+          monthlyData,
+        };
+
+        // Calculate stats (primary currency for spending)
+        const totalItems = yearOrders.reduce((sum, o) => sum + o.quantity, 0);
+        const primaryItems = primaryOrders.reduce((sum, o) => sum + o.quantity, 0);
+        const totalSpend = primaryOrders.reduce((sum, o) => sum + o.totalOwed, 0);
+        const totalRefundsAmount = primaryRefunds.reduce((sum, r) => sum + r.amountRefunded, 0);
+        const retailOrdersList = yearOrders.filter(o => !o.isDigital);
+        const digitalOrdersList = yearOrders.filter(o => o.isDigital);
+        const uniqueOrderIds = new Set(yearOrders.map(o => o.orderId));
+        const totalOrderCount = uniqueOrderIds.size;
+
+        // Monthly spending (primary currency)
+        const monthlySpending = monthlyData.map(m => {
+          const monthPrimaryOrders = primaryOrders.filter(o => o.orderDate.getMonth() === m.monthIndex);
+          return { month: m.month, amount: monthPrimaryOrders.reduce((sum, o) => sum + o.totalOwed, 0) };
+        });
+
+        // Peak month (primary currency)
+        const peakMonthData = monthlySpending.reduce((max, m) => m.amount > max.amount ? m : max, monthlySpending[0] || { month: 'January', amount: 0 });
+        const peakMonthOrders = primaryOrders.filter(o => MONTHS_FULL[o.orderDate.getMonth()] === peakMonthData.month);
+
+        // Daily order counts (all orders)
+        const dailyOrderMap = new Map<number, number>();
+        for (const order of yearOrders) {
+          const day = order.orderDate.getDay();
+          dailyOrderMap.set(day, (dailyOrderMap.get(day) || 0) + 1);
+        }
+        const dailyOrders = DAYS_FULL.map((day, idx) => ({
+          day,
+          count: dailyOrderMap.get(idx) || 0,
+        }));
+        const favoriteDay = dailyOrders.reduce((max, d) => d.count > max.count ? d : max, { day: 'Monday', count: 0 });
+
+        // Digital stats (primary currency for spend)
+        const primaryDigitalOrders = hasMixedCurrencies
+          ? digitalOrdersList.filter(o => (o.currency || 'USD') === primaryCurrency)
+          : digitalOrdersList;
+        const digitalSpend = primaryDigitalOrders.reduce((sum, o) => sum + o.totalOwed, 0);
+        const digitalItemCount = digitalOrdersList.reduce((sum, o) => sum + o.quantity, 0);
+
+        stats = {
+          totalGrossSpend: totalSpend,
+          totalRefunds: totalRefundsAmount,
+          netSpend: totalSpend - totalRefundsAmount,
+          monthlyAverage: (totalSpend - totalRefundsAmount) / 12,
+          averageItemCost: primaryItems > 0 ? totalSpend / primaryItems : 0,
+          totalOrders: totalOrderCount,
+          retailOrders: retailOrdersList.length,
+          digitalOrders: digitalOrdersList.length,
+          totalItems,
+          averageItemsPerMonth: totalItems / 12,
+          ordersPerDay: totalOrderCount / 365,
+          peakMonth: { month: peakMonthData.month, amount: peakMonthData.amount, orderCount: peakMonthOrders.length },
+          favoriteDay,
+          monthlySpending,
+          dailyOrders,
+          topItems: [],
+          topExpensiveItems: [],
+          digitalSpend,
+          digitalItemCount,
+          bookCount: 0,
+          bookSpend: 0,
+          kindleBookCount: 0,
+          physicalBookCount: 0,
+          topBooks: [],
+          returnCount: yearRefunds.length,
+          totalRefundAmount: totalRefundsAmount,
+          returnRate: totalOrderCount > 0 ? (yearRefunds.length / totalOrderCount) * 100 : 0,
+          primaryCurrency,
+          hasMixedCurrencies,
+          currencyBreakdown,
+        };
+      } else {
+        return;
+      }
+
+      setStats(stats);
+      setProcessedData(processedData);
       // Update localStorage with new year
-      storeData(result.stats, result.processedData, parsedFiles, availableYears, year);
+      storeData(stats, processedData, allOrders, allRefunds, parsedFiles, availableYears, year);
     } catch (error) {
       console.error('Error recalculating stats:', error);
     }
-  }, [parsedFiles, availableYears]);
+  }, [parsedFiles, allOrders, allRefunds, availableYears]);
 
   const handleReset = useCallback(() => {
     setStats(null);
     setProcessedData(null);
     setParsedFiles([]);
+    setAllOrders([]);
+    setAllRefunds([]);
     setAvailableYears([]);
     setSelectedYear(new Date().getFullYear());
     clearStoredData();
@@ -108,12 +273,91 @@ function App() {
   const handleContinueExploring = useCallback(() => {
     const savedData = getStoredData();
     if (savedData) {
-      setStats(savedData.stats);
-      setProcessedData(savedData.processedData);
+      // If processedData has no orders but allOrders exists, recalculate for a year that has data
+      let targetYear = savedData.selectedYear || new Date().getFullYear();
+      let stats = savedData.stats;
+      let processedData = savedData.processedData;
+
+      if (processedData.orders.length === 0 && savedData.allOrders && savedData.allOrders.length > 0) {
+        // Find years that actually have orders
+        const yearsWithOrders = new Set(savedData.allOrders.map(o => o.orderDate.getFullYear()));
+        const sortedYears = Array.from(yearsWithOrders).sort((a, b) => b - a);
+
+        if (sortedYears.length > 0 && !yearsWithOrders.has(targetYear)) {
+          // Switch to most recent year with data
+          targetYear = sortedYears[0];
+          console.log('[App] No orders for selected year, switching to:', targetYear);
+        }
+
+        // Recalculate stats and processedData from allOrders for the target year
+        if (savedData.parsedFiles && savedData.parsedFiles.length > 0) {
+          const result = calculateStatsWithData(savedData.parsedFiles, targetYear);
+          stats = result.stats;
+          processedData = result.processedData;
+        } else {
+          // No parsedFiles, filter allOrders manually
+          const yearOrders = savedData.allOrders.filter(o => o.orderDate.getFullYear() === targetYear);
+          const yearRefunds = (savedData.allRefunds || []).filter(r => r.refundDate.getFullYear() === targetYear);
+
+          // Calculate currency breakdown
+          const currencyMap = new Map<string, { amount: number; orderCount: number }>();
+          for (const order of yearOrders) {
+            const currency = order.currency || 'USD';
+            if (!currencyMap.has(currency)) {
+              currencyMap.set(currency, { amount: 0, orderCount: 0 });
+            }
+            const data = currencyMap.get(currency)!;
+            data.amount += order.totalOwed;
+            data.orderCount += 1;
+          }
+          const currencyBreakdown = Array.from(currencyMap.entries())
+            .map(([currency, data]) => ({ currency, ...data }))
+            .sort((a, b) => b.orderCount - a.orderCount);
+          const primaryCurrency = currencyBreakdown.length > 0 ? currencyBreakdown[0].currency : 'USD';
+          const hasMixedCurrencies = currencyBreakdown.length > 1;
+
+          // Filter to primary currency for spending stats
+          const primaryOrders = hasMixedCurrencies
+            ? yearOrders.filter(o => (o.currency || 'USD') === primaryCurrency)
+            : yearOrders;
+          const primaryRefunds = hasMixedCurrencies
+            ? yearRefunds.filter(r => (r.currency || 'USD') === primaryCurrency)
+            : yearRefunds;
+
+          const totalGross = primaryOrders.reduce((sum, o) => sum + o.totalOwed, 0);
+          const totalRefundAmount = primaryRefunds.reduce((sum, r) => sum + r.amountRefunded, 0);
+
+          processedData = {
+            ...processedData,
+            orders: yearOrders,
+            monthlyData: processedData.monthlyData.map((m, idx) => ({
+              ...m,
+              orders: yearOrders.filter(o => o.orderDate.getMonth() === idx),
+            })),
+          };
+          // Recalculate stats from filtered orders
+          stats = {
+            ...stats,
+            totalOrders: yearOrders.length,
+            totalItems: yearOrders.reduce((sum, o) => sum + o.quantity, 0),
+            totalGrossSpend: totalGross,
+            netSpend: totalGross - totalRefundAmount,
+            primaryCurrency,
+            hasMixedCurrencies,
+            currencyBreakdown,
+          };
+        }
+      }
+
+      setStats(stats);
+      setProcessedData(processedData);
+      if (savedData.allOrders) setAllOrders(savedData.allOrders);
+      if (savedData.allRefunds) setAllRefunds(savedData.allRefunds);
       if (savedData.parsedFiles) setParsedFiles(savedData.parsedFiles);
       if (savedData.availableYears) setAvailableYears(savedData.availableYears);
-      if (savedData.selectedYear) setSelectedYear(savedData.selectedYear);
-      // If user has email, go to explore; otherwise go to slides
+      setSelectedYear(targetYear);
+      if (savedData.yearlyData) setStoredYearlyData(savedData.yearlyData);
+
       if (userEmail) {
         setView('explore');
       } else {
@@ -126,11 +370,84 @@ function App() {
   const handleViewWrapped = useCallback(() => {
     const savedData = getStoredData();
     if (savedData) {
-      setStats(savedData.stats);
-      setProcessedData(savedData.processedData);
+      // Same logic as handleContinueExploring - recalculate if needed
+      let targetYear = savedData.selectedYear || new Date().getFullYear();
+      let stats = savedData.stats;
+      let processedData = savedData.processedData;
+
+      if (processedData.orders.length === 0 && savedData.allOrders && savedData.allOrders.length > 0) {
+        const yearsWithOrders = new Set(savedData.allOrders.map(o => o.orderDate.getFullYear()));
+        const sortedYears = Array.from(yearsWithOrders).sort((a, b) => b - a);
+
+        if (sortedYears.length > 0 && !yearsWithOrders.has(targetYear)) {
+          targetYear = sortedYears[0];
+        }
+
+        if (savedData.parsedFiles && savedData.parsedFiles.length > 0) {
+          const result = calculateStatsWithData(savedData.parsedFiles, targetYear);
+          stats = result.stats;
+          processedData = result.processedData;
+        } else {
+          const yearOrders = savedData.allOrders.filter(o => o.orderDate.getFullYear() === targetYear);
+          const yearRefunds = (savedData.allRefunds || []).filter(r => r.refundDate.getFullYear() === targetYear);
+
+          // Calculate currency breakdown
+          const currencyMap = new Map<string, { amount: number; orderCount: number }>();
+          for (const order of yearOrders) {
+            const currency = order.currency || 'USD';
+            if (!currencyMap.has(currency)) {
+              currencyMap.set(currency, { amount: 0, orderCount: 0 });
+            }
+            const data = currencyMap.get(currency)!;
+            data.amount += order.totalOwed;
+            data.orderCount += 1;
+          }
+          const currencyBreakdown = Array.from(currencyMap.entries())
+            .map(([currency, data]) => ({ currency, ...data }))
+            .sort((a, b) => b.orderCount - a.orderCount);
+          const primaryCurrency = currencyBreakdown.length > 0 ? currencyBreakdown[0].currency : 'USD';
+          const hasMixedCurrencies = currencyBreakdown.length > 1;
+
+          // Filter to primary currency for spending stats
+          const primaryOrders = hasMixedCurrencies
+            ? yearOrders.filter(o => (o.currency || 'USD') === primaryCurrency)
+            : yearOrders;
+          const primaryRefunds = hasMixedCurrencies
+            ? yearRefunds.filter(r => (r.currency || 'USD') === primaryCurrency)
+            : yearRefunds;
+
+          const totalGross = primaryOrders.reduce((sum, o) => sum + o.totalOwed, 0);
+          const totalRefundAmount = primaryRefunds.reduce((sum, r) => sum + r.amountRefunded, 0);
+
+          processedData = {
+            ...processedData,
+            orders: yearOrders,
+            monthlyData: processedData.monthlyData.map((m, idx) => ({
+              ...m,
+              orders: yearOrders.filter(o => o.orderDate.getMonth() === idx),
+            })),
+          };
+          stats = {
+            ...stats,
+            totalOrders: yearOrders.length,
+            totalItems: yearOrders.reduce((sum, o) => sum + o.quantity, 0),
+            totalGrossSpend: totalGross,
+            netSpend: totalGross - totalRefundAmount,
+            primaryCurrency,
+            hasMixedCurrencies,
+            currencyBreakdown,
+          };
+        }
+      }
+
+      setStats(stats);
+      setProcessedData(processedData);
+      if (savedData.allOrders) setAllOrders(savedData.allOrders);
+      if (savedData.allRefunds) setAllRefunds(savedData.allRefunds);
       if (savedData.parsedFiles) setParsedFiles(savedData.parsedFiles);
       if (savedData.availableYears) setAvailableYears(savedData.availableYears);
-      if (savedData.selectedYear) setSelectedYear(savedData.selectedYear);
+      setSelectedYear(targetYear);
+      if (savedData.yearlyData) setStoredYearlyData(savedData.yearlyData);
       setView('slides');
     }
   }, []);
@@ -144,6 +461,7 @@ function App() {
           hasEmail={!!userEmail}
           onContinueExploring={handleContinueExploring}
           onViewWrapped={handleViewWrapped}
+          onClearData={handleReset}
         />
       )}
       {view === 'slides' && stats && (
@@ -163,7 +481,11 @@ function App() {
         <ExploreDashboard
           stats={stats}
           processedData={processedData}
+          parsedFiles={parsedFiles}
+          allOrders={allOrders}
+          storedYearlyData={storedYearlyData}
           onBack={handleBackToSlides}
+          onReset={handleReset}
           year={selectedYear}
           availableYears={availableYears}
           onYearChange={handleYearChange}

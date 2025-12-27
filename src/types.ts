@@ -61,6 +61,15 @@ export interface MonthlyData {
   orders: ProcessedOrder[];
 }
 
+// Yearly aggregated data for all-years chart
+export interface YearlyData {
+  year: number;
+  totalSpend: number;
+  orderCount: number;
+  orders: ProcessedOrder[];
+  primaryCurrency?: string;
+}
+
 // Refund with matched original order
 export interface EnrichedRefund extends ProcessedRefund {
   originalOrder?: ProcessedOrder;
@@ -79,6 +88,8 @@ export interface ProcessedData {
 export interface CalculateStatsResult {
   stats: WrappedStats;
   processedData: ProcessedData;
+  allOrders: ProcessedOrder[];  // All orders across all years (for All Years chart)
+  allRefunds: ProcessedRefund[];  // All refunds across all years
 }
 
 // Calculated statistics
@@ -133,6 +144,11 @@ export interface WrappedStats {
   totalRefundAmount: number;
   averageRefundTime?: number;
   returnRate: number;
+
+  // Currency
+  primaryCurrency: string;
+  hasMixedCurrencies: boolean;
+  currencyBreakdown: { currency: string; amount: number; orderCount: number }[];
 }
 
 // File detection

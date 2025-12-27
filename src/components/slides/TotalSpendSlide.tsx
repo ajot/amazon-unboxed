@@ -12,6 +12,7 @@ interface Props {
 
 export const TotalSpendSlide = forwardRef<HTMLDivElement, Props>(
   ({ stats, year }, ref) => {
+    console.log('[TotalSpendSlide] hasMixed:', stats.hasMixedCurrencies, 'primary:', stats.primaryCurrency, 'breakdown:', stats.currencyBreakdown);
     return (
       <SlideWrapper ref={ref} gradient="gradient-amber-navy">
         <motion.p
@@ -62,6 +63,27 @@ export const TotalSpendSlide = forwardRef<HTMLDivElement, Props>(
             </span>
           </div>
         </motion.div>
+
+        {stats.hasMixedCurrencies && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.2 }}
+            className="mt-4 px-3 py-2 bg-amber-500/20 border border-amber-500/40 rounded-lg text-xs text-amber-200"
+          >
+            <span className="mr-1">⚠️</span>
+            Totals shown in {stats.primaryCurrency} only.{' '}
+            <span className="text-amber-300/70">
+              Also ordered in:{' '}
+              {stats.currencyBreakdown.slice(1).map((c, i) => (
+                <span key={c.currency}>
+                  {i > 0 && ', '}
+                  {c.currency} ({c.orderCount})
+                </span>
+              ))}
+            </span>
+          </motion.div>
+        )}
       </SlideWrapper>
     );
   }
