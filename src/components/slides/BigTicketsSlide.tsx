@@ -7,6 +7,7 @@ import { LIMITS } from '../../config';
 
 interface Props {
   stats: WrappedStats;
+  year: number;
 }
 
 export const BigTicketsSlide = forwardRef<HTMLDivElement, Props>(

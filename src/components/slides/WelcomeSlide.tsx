@@ -2,7 +2,11 @@ import { motion } from 'framer-motion';
 import { SlideWrapper } from './SlideWrapper';
 import { forwardRef } from 'react';
 
-export const WelcomeSlide = forwardRef<HTMLDivElement>((_, ref) => {
+interface Props {
+  year: number;
+}
+
+export const WelcomeSlide = forwardRef<HTMLDivElement, Props>(({ year }, ref) => {
   return (
     <SlideWrapper ref={ref} gradient="gradient-orange-navy">
       <motion.div
@@ -21,7 +25,7 @@ export const WelcomeSlide = forwardRef<HTMLDivElement>((_, ref) => {
       >
         <h1 className="text-4xl lg:text-7xl font-bold text-white mb-2">Your</h1>
         <h1 className="text-4xl lg:text-7xl font-bold text-white mb-2">Amazon</h1>
-        <h1 className="text-4xl lg:text-7xl font-bold text-white">2025</h1>
+        <h1 className="text-4xl lg:text-7xl font-bold text-white">{year}</h1>
       </motion.div>
 
       <motion.div

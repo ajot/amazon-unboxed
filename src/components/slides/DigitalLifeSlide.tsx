@@ -6,6 +6,7 @@ import { forwardRef } from 'react';
 
 interface Props {
   stats: WrappedStats;
+  year: number;
 }
 
 export const DigitalLifeSlide = forwardRef<HTMLDivElement, Props>(

@@ -6,12 +6,13 @@ import { forwardRef } from 'react';
 
 interface Props {
   stats: WrappedStats;
+  year: number;
   onDownload?: () => void;
   onExplore?: () => void;
 }
 
 export const SummarySlide = forwardRef<HTMLDivElement, Props>(
-  ({ stats, onDownload, onExplore }, ref) => {
+  ({ stats, year, onDownload, onExplore }, ref) => {
     // Truncate item name if needed
     const topItemName =
       stats.topItems[0]?.name.length > 20
@@ -25,7 +26,7 @@ export const SummarySlide = forwardRef<HTMLDivElement, Props>(
           animate={{ opacity: 1 }}
           className="text-2xl lg:text-4xl font-bold text-white mb-1"
         >
-          My Amazon 2025
+          My Amazon {year}
         </motion.h2>
         <motion.div
           initial={{ scaleX: 0 }}

@@ -1,4 +1,4 @@
-import type { WrappedStats, ProcessedData, ProcessedOrder, ProcessedRefund, EnrichedRefund, MonthlyData } from '../types';
+import type { WrappedStats, ProcessedData, ProcessedOrder, ProcessedRefund, EnrichedRefund, MonthlyData, ParsedFile } from '../types';
 
 const EMAIL_STORAGE_KEY = 'amazon-wrapped-email';
 const DATA_STORAGE_KEY = 'amazon-wrapped-data';
@@ -40,13 +40,22 @@ interface StoredData {
       orders: (Omit<ProcessedOrder, 'orderDate'> & { orderDate: string })[];
     })[];
   };
+  parsedFiles?: ParsedFile[];
+  availableYears?: number[];
+  selectedYear?: number;
   savedAt: string;
 }
 
 /**
  * Store processed data in localStorage
  */
-export function storeData(stats: WrappedStats, processedData: ProcessedData): void {
+export function storeData(
+  stats: WrappedStats,
+  processedData: ProcessedData,
+  parsedFiles?: ParsedFile[],
+  availableYears?: number[],
+  selectedYear?: number
+): void {
   try {
     const dataToStore: StoredData = {
       stats,
@@ -75,6 +84,9 @@ export function storeData(stats: WrappedStats, processedData: ProcessedData): vo
           })),
         })),
       },
+      parsedFiles,
+      availableYears,
+      selectedYear,
       savedAt: new Date().toISOString(),
     };
     localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(dataToStore));
@@ -83,10 +95,18 @@ export function storeData(stats: WrappedStats, processedData: ProcessedData): vo
   }
 }
 
+export interface StoredDataResult {
+  stats: WrappedStats;
+  processedData: ProcessedData;
+  parsedFiles?: ParsedFile[];
+  availableYears?: number[];
+  selectedYear?: number;
+}
+
 /**
  * Get stored data from localStorage
  */
-export function getStoredData(): { stats: WrappedStats; processedData: ProcessedData } | null {
+export function getStoredData(): StoredDataResult | null {
   try {
     const stored = localStorage.getItem(DATA_STORAGE_KEY);
     if (!stored) return null;
@@ -120,7 +140,13 @@ export function getStoredData(): { stats: WrappedStats; processedData: Processed
       })),
     };
 
-    return { stats: data.stats, processedData };
+    return {
+      stats: data.stats,
+      processedData,
+      parsedFiles: data.parsedFiles,
+      availableYears: data.availableYears,
+      selectedYear: data.selectedYear,
+    };
   } catch (e) {
     console.warn('Failed to retrieve stored data:', e);
     return null;

@@ -14,12 +14,18 @@ interface ExploreDashboardProps {
   stats: WrappedStats;
   processedData: ProcessedData;
   onBack: () => void;
+  year: number;
+  availableYears: number[];
+  onYearChange: (year: number) => void;
 }
 
 export function ExploreDashboard({
   stats,
   processedData,
   onBack,
+  year,
+  availableYears,
+  onYearChange,
 }: ExploreDashboardProps) {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
@@ -52,11 +58,27 @@ export function ExploreDashboard({
                 📊 Data Explorer
               </h1>
             </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-400">2025 Summary</p>
-              <p className="text-lg font-semibold text-amazon-orange">
-                {formatCurrency(stats.netSpend)}
-              </p>
+            <div className="flex items-center gap-4">
+              {/* Year selector */}
+              {availableYears.length > 1 && (
+                <select
+                  value={year}
+                  onChange={(e) => onYearChange(parseInt(e.target.value))}
+                  className="px-3 py-2 bg-white/10 text-white rounded-lg text-sm border border-white/20 hover:bg-white/20 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-amazon-orange"
+                >
+                  {availableYears.map((y) => (
+                    <option key={y} value={y} className="bg-amazon-dark">
+                      {y}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <div className="text-right">
+                <p className="text-sm text-gray-400">{year} Summary</p>
+                <p className="text-lg font-semibold text-amazon-orange">
+                  {formatCurrency(stats.netSpend)}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -183,6 +205,7 @@ export function ExploreDashboard({
               <RefundsView
                 refunds={processedData.enrichedRefunds}
                 totalRefunded={stats.totalRefundAmount}
+                year={year}
               />
             </motion.div>
           )}

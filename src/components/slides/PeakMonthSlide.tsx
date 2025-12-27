@@ -6,6 +6,7 @@ import { forwardRef } from 'react';
 
 interface Props {
   stats: WrappedStats;
+  year: number;
 }
 
 const MONTH_ABBREVS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];

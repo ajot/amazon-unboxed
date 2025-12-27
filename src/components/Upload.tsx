@@ -130,7 +130,7 @@ export function Upload({
             📦
           </motion.div>
           <h1 className="text-5xl font-bold text-white mb-2">Amazon Wrapped</h1>
-          <p className="text-gray-400">Your 2025 shopping story awaits</p>
+          <p className="text-gray-400">Your shopping story awaits</p>
         </div>
 
         {/* How to Get Your Data - Collapsible */}

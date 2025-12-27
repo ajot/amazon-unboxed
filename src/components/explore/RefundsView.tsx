@@ -14,11 +14,12 @@ import {
 interface RefundsViewProps {
   refunds: EnrichedRefund[];
   totalRefunded: number;
+  year: number;
 }
 
 type SortKey = 'refundDate' | 'productName' | 'amountRefunded';
 
-export function RefundsView({ refunds, totalRefunded }: RefundsViewProps) {
+export function RefundsView({ refunds, totalRefunded, year }: RefundsViewProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('refundDate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
@@ -61,7 +62,7 @@ export function RefundsView({ refunds, totalRefunded }: RefundsViewProps) {
       <div className="bg-amazon-navy/50 rounded-xl p-6 mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-amazon-orange text-sm">Total Refunded in 2025</p>
+            <p className="text-amazon-orange text-sm">Total Refunded in {year}</p>
             <p className="text-3xl font-bold text-amazon-orange">
               {formatCurrency(totalRefunded)}
             </p>
@@ -165,7 +166,7 @@ export function RefundsView({ refunds, totalRefunded }: RefundsViewProps) {
         {paginatedRefunds.length === 0 && (
           <div className="p-8 text-center text-gray-400">
             {refunds.length === 0
-              ? 'No refunds recorded in 2025'
+              ? `No refunds recorded in ${year}`
               : 'No refunds match your search'}
           </div>
         )}

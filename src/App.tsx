@@ -3,7 +3,7 @@ import { Upload } from './components/Upload';
 import { SlideShow } from './components/SlideShow';
 import { EmailGate } from './components/explore/EmailGate';
 import { ExploreDashboard } from './components/explore/ExploreDashboard';
-import { calculateStatsWithData } from './utils/dataProcessor';
+import { calculateStatsWithData, getAvailableYears } from './utils/dataProcessor';
 import {
   getStoredEmail,
   storeEmail,
@@ -22,6 +22,9 @@ function App() {
   const [processedData, setProcessedData] = useState<ProcessedData | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [hasSavedData, setHasSavedData] = useState(false);
+  const [parsedFiles, setParsedFiles] = useState<ParsedFile[]>([]);
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
   // Check for stored email and data on mount
   useEffect(() => {
@@ -34,11 +37,22 @@ function App() {
 
   const handleFilesProcessed = useCallback((files: ParsedFile[]) => {
     try {
-      const result = calculateStatsWithData(files);
+      // Store raw files for year switching
+      setParsedFiles(files);
+
+      // Detect available years
+      const years = getAvailableYears(files);
+      setAvailableYears(years);
+
+      // Default to most recent year
+      const targetYear = years[0] || new Date().getFullYear();
+      setSelectedYear(targetYear);
+
+      const result = calculateStatsWithData(files, targetYear);
       setStats(result.stats);
       setProcessedData(result.processedData);
       // Save to localStorage
-      storeData(result.stats, result.processedData);
+      storeData(result.stats, result.processedData, files, years, targetYear);
       setHasSavedData(true);
       setView('slides');
     } catch (error) {
@@ -46,9 +60,26 @@ function App() {
     }
   }, []);
 
+  const handleYearChange = useCallback((year: number) => {
+    if (parsedFiles.length === 0) return;
+    try {
+      setSelectedYear(year);
+      const result = calculateStatsWithData(parsedFiles, year);
+      setStats(result.stats);
+      setProcessedData(result.processedData);
+      // Update localStorage with new year
+      storeData(result.stats, result.processedData, parsedFiles, availableYears, year);
+    } catch (error) {
+      console.error('Error recalculating stats:', error);
+    }
+  }, [parsedFiles, availableYears]);
+
   const handleReset = useCallback(() => {
     setStats(null);
     setProcessedData(null);
+    setParsedFiles([]);
+    setAvailableYears([]);
+    setSelectedYear(new Date().getFullYear());
     clearStoredData();
     setHasSavedData(false);
     setView('upload');
@@ -79,6 +110,9 @@ function App() {
     if (savedData) {
       setStats(savedData.stats);
       setProcessedData(savedData.processedData);
+      if (savedData.parsedFiles) setParsedFiles(savedData.parsedFiles);
+      if (savedData.availableYears) setAvailableYears(savedData.availableYears);
+      if (savedData.selectedYear) setSelectedYear(savedData.selectedYear);
       // If user has email, go to explore; otherwise go to slides
       if (userEmail) {
         setView('explore');
@@ -94,6 +128,9 @@ function App() {
     if (savedData) {
       setStats(savedData.stats);
       setProcessedData(savedData.processedData);
+      if (savedData.parsedFiles) setParsedFiles(savedData.parsedFiles);
+      if (savedData.availableYears) setAvailableYears(savedData.availableYears);
+      if (savedData.selectedYear) setSelectedYear(savedData.selectedYear);
       setView('slides');
     }
   }, []);
@@ -110,7 +147,14 @@ function App() {
         />
       )}
       {view === 'slides' && stats && (
-        <SlideShow stats={stats} onReset={handleReset} onExplore={handleExplore} />
+        <SlideShow
+          stats={stats}
+          onReset={handleReset}
+          onExplore={handleExplore}
+          year={selectedYear}
+          availableYears={availableYears}
+          onYearChange={handleYearChange}
+        />
       )}
       {view === 'emailGate' && (
         <EmailGate onSubmit={handleEmailSubmit} onBack={handleBackToSlides} />
@@ -120,6 +164,9 @@ function App() {
           stats={stats}
           processedData={processedData}
           onBack={handleBackToSlides}
+          year={selectedYear}
+          availableYears={availableYears}
+          onYearChange={handleYearChange}
         />
       )}
     </div>

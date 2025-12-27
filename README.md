@@ -23,6 +23,11 @@ A Spotify Wrapped-style visualization of your Amazon order history. Upload your 
 
 - **Share**: Download slides as images to share on social media
 
+- **Time Machine**: View your data from any year
+  - Automatic year detection from uploaded files
+  - Switch between years without re-uploading
+  - Year selector in slideshow navigation and explore mode
+
 ## Tech Stack
 
 - React 18 + TypeScript

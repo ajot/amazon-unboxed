@@ -6,6 +6,7 @@ import { forwardRef } from 'react';
 
 interface Props {
   stats: WrappedStats;
+  year: number;
 }
 
 const StatBox = ({
@@ -29,7 +30,7 @@ const StatBox = ({
 );
 
 export const ByTheNumbersSlide = forwardRef<HTMLDivElement, Props>(
-  ({ stats }, ref) => {
+  ({ stats, year }, ref) => {
     const daysPerOrder = stats.totalOrders > 0 ? 365 / stats.totalOrders : 0;
 
     return (
@@ -39,7 +40,7 @@ export const ByTheNumbersSlide = forwardRef<HTMLDivElement, Props>(
           animate={{ opacity: 1 }}
           className="text-2xl lg:text-4xl font-bold text-white mb-8 lg:mb-12"
         >
-          2025 in numbers
+          {year} in numbers
         </motion.h2>
 
         <div className="grid grid-cols-2 gap-4 lg:gap-6 w-full max-w-xs lg:max-w-lg">

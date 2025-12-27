@@ -21,11 +21,14 @@ interface SlideShowProps {
   stats: WrappedStats;
   onReset: () => void;
   onExplore: () => void;
+  year: number;
+  availableYears: number[];
+  onYearChange: (year: number) => void;
 }
 
 const TOTAL_SLIDES = 12;
 
-export function SlideShow({ stats, onReset, onExplore }: SlideShowProps) {
+export function SlideShow({ stats, onReset, onExplore, year, availableYears, onYearChange }: SlideShowProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isDownloading, setIsDownloading] = useState(false);
   const slideRef = useRef<HTMLDivElement>(null);
@@ -86,7 +89,7 @@ export function SlideShow({ stats, onReset, onExplore }: SlideShowProps) {
       });
 
       const link = document.createElement('a');
-      link.download = `amazon-wrapped-2025-slide-${currentSlide + 1}.png`;
+      link.download = `amazon-wrapped-${year}-slide-${currentSlide + 1}.png`;
       link.href = dataUrl;
       link.click();
     } catch (err) {
@@ -94,15 +97,15 @@ export function SlideShow({ stats, onReset, onExplore }: SlideShowProps) {
     } finally {
       setIsDownloading(false);
     }
-  }, [currentSlide, isDownloading]);
+  }, [currentSlide, isDownloading, year]);
 
   // Render current slide
   const renderSlide = () => {
-    const commonProps = { stats };
+    const commonProps = { stats, year };
 
     switch (currentSlide) {
       case 0:
-        return <WelcomeSlide ref={slideRef} />;
+        return <WelcomeSlide ref={slideRef} year={year} />;
       case 1:
         return <TotalSpendSlide ref={slideRef} {...commonProps} />;
       case 2:
@@ -213,6 +216,26 @@ export function SlideShow({ stats, onReset, onExplore }: SlideShowProps) {
       >
         📊
       </button>
+
+      {/* Year selector */}
+      {availableYears.length > 1 && (
+        <select
+          value={year}
+          onChange={(e) => {
+            e.stopPropagation();
+            onYearChange(parseInt(e.target.value));
+          }}
+          onClick={(e) => e.stopPropagation()}
+          className="ml-2 px-3 py-2 bg-white/10 text-white rounded-lg text-sm border border-white/20 hover:bg-white/20 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-amazon-orange"
+          title="Select year"
+        >
+          {availableYears.map((y) => (
+            <option key={y} value={y} className="bg-amazon-dark">
+              {y}
+            </option>
+          ))}
+        </select>
+      )}
     </>
   );
 

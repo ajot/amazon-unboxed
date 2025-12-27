@@ -7,10 +7,11 @@ import { forwardRef } from 'react';
 
 interface Props {
   stats: WrappedStats;
+  year: number;
 }
 
 export const TotalSpendSlide = forwardRef<HTMLDivElement, Props>(
-  ({ stats }, ref) => {
+  ({ stats, year }, ref) => {
     return (
       <SlideWrapper ref={ref} gradient="gradient-amber-navy">
         <motion.p
@@ -39,7 +40,7 @@ export const TotalSpendSlide = forwardRef<HTMLDivElement, Props>(
           transition={{ delay: 0.5 }}
           className="text-lg lg:text-2xl text-white/80 mt-4"
         >
-          on Amazon in 2025
+          on Amazon in {year}
         </motion.p>
 
         <motion.div

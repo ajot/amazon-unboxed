@@ -5,6 +5,7 @@ import { forwardRef } from 'react';
 
 interface Props {
   stats: WrappedStats;
+  year: number;
 }
 
 const DAY_ABBREVS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];

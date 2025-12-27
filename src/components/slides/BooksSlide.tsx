@@ -7,10 +7,11 @@ import { forwardRef } from 'react';
 
 interface Props {
   stats: WrappedStats;
+  year: number;
 }
 
 export const BooksSlide = forwardRef<HTMLDivElement, Props>(
-  ({ stats }, ref) => {
+  ({ stats, year }, ref) => {
     const hasBooks = stats.bookCount > 0;
 
     if (!hasBooks) {
@@ -36,7 +37,7 @@ export const BooksSlide = forwardRef<HTMLDivElement, Props>(
             transition={{ delay: 0.3 }}
             className="text-white/60 text-base lg:text-xl"
           >
-            Maybe 2025 is the year to
+            Maybe {year} is the year to
             <br />
             start that reading list?
           </motion.p>

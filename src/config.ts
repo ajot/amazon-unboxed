@@ -8,9 +8,6 @@
 // APP SETTINGS
 // =============================================================================
 
-/** Year to filter data for (update annually) */
-export const DATA_YEAR = 2025;
-
 /** Locale for number/currency formatting */
 export const LOCALE = 'en-US';
 

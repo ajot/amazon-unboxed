@@ -16,7 +16,6 @@ import {
   isDigitalItemRow,
 } from './csvParser';
 import {
-  DATA_YEAR,
   LOCALE,
   CURRENCY,
   LIMITS,
@@ -161,14 +160,54 @@ function processRefunds(data: unknown[]): ProcessedRefund[] {
 }
 
 /**
+ * Get all available years from parsed files (before filtering)
+ * Returns years sorted descending (most recent first)
+ */
+export function getAvailableYears(files: ParsedFile[]): number[] {
+  const years = new Set<number>();
+
+  for (const file of files) {
+    switch (file.type) {
+      case 'retail_orders':
+        for (const row of file.data) {
+          if (isRetailOrderRow(row)) {
+            const date = parseAmazonDate(row['Order Date']);
+            if (date) years.add(date.getFullYear());
+          }
+        }
+        break;
+      case 'digital_items':
+        for (const row of file.data) {
+          if (isDigitalItemRow(row)) {
+            const date = parseAmazonDate(row['OrderDate']);
+            if (date) years.add(date.getFullYear());
+          }
+        }
+        break;
+      case 'refund_payments':
+        for (const row of file.data) {
+          if (isRefundPaymentRow(row)) {
+            const date = parseAmazonDate(row['RefundCompletionDate']);
+            if (date) years.add(date.getFullYear());
+          }
+        }
+        break;
+    }
+  }
+
+  return Array.from(years).sort((a, b) => b - a);
+}
+
+/**
  * Filter orders to target year only
  */
 function filterToTargetYear<T extends { orderDate?: Date; refundDate?: Date }>(
-  data: T[]
+  data: T[],
+  targetYear: number
 ): T[] {
   return data.filter((item) => {
     const date = 'orderDate' in item ? item.orderDate : item.refundDate;
-    return date && date.getFullYear() === DATA_YEAR;
+    return date && date.getFullYear() === targetYear;
   });
 }
 
@@ -208,7 +247,7 @@ export function formatPercent(num: number): string {
 /**
  * Calculate all wrapped statistics and preserve processed data for exploration
  */
-export function calculateStatsWithData(files: ParsedFile[]): CalculateStatsResult {
+export function calculateStatsWithData(files: ParsedFile[], targetYear: number): CalculateStatsResult {
   // Extract and process data from files
   let allOrders: ProcessedOrder[] = [];
   let allRefunds: ProcessedRefund[] = [];
@@ -228,8 +267,8 @@ export function calculateStatsWithData(files: ParsedFile[]): CalculateStatsResul
   }
 
   // Filter to target year
-  const filteredOrders = filterToTargetYear(allOrders);
-  const filteredRefunds = filterToTargetYear(allRefunds);
+  const filteredOrders = filterToTargetYear(allOrders, targetYear);
+  const filteredRefunds = filterToTargetYear(allRefunds, targetYear);
 
   // Dedupe orders by orderId + productName (same item in same order)
   const uniqueOrderKeys = new Set<string>();
