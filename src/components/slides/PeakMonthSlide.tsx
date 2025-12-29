@@ -53,25 +53,28 @@ export const PeakMonthSlide = forwardRef<HTMLDivElement, Props>(
           transition={{ delay: 0.7 }}
           className="mt-8 w-full max-w-xs lg:max-w-md"
         >
-          <div className="bar-chart">
+          <div className="flex items-end justify-center gap-1 lg:gap-2 h-20 lg:h-28">
             {stats.monthlySpending.map((month, idx) => {
               const height = maxSpend > 0 ? (month.amount / maxSpend) * 100 : 0;
+              const isPeak = idx === peakMonthIndex;
               return (
                 <motion.div
                   key={month.month}
                   initial={{ height: 0 }}
                   animate={{ height: `${Math.max(height, 5)}%` }}
                   transition={{ delay: 0.8 + idx * 0.05, duration: 0.5 }}
-                  className={`bar ${idx === peakMonthIndex ? 'highlighted' : ''}`}
+                  className={`w-4 lg:w-6 rounded-t-md ${
+                    isPeak ? 'bg-amazon-orange' : 'bg-white/30'
+                  }`}
                 />
               );
             })}
           </div>
-          <div className="flex justify-between mt-2 px-1">
+          <div className="flex justify-center gap-1 lg:gap-2 mt-2">
             {MONTH_ABBREVS.map((m, idx) => (
               <span
                 key={m + idx}
-                className={`text-xs ${
+                className={`w-4 lg:w-6 text-center text-xs ${
                   idx === peakMonthIndex ? 'text-amazon-orange font-bold' : 'text-white/40'
                 }`}
               >
