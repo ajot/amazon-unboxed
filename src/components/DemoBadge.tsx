@@ -9,9 +9,9 @@ export function DemoBadge({ className = '' }: DemoBadgeProps) {
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-500/20 border border-purple-500/40 rounded-full text-purple-300 text-xs font-medium ${className}`}
+      className={`inline-flex items-center gap-1.5 px-3 py-1.5 bg-black/60 backdrop-blur-sm border border-white/20 rounded-full text-white text-sm font-medium shadow-lg ${className}`}
     >
-      <span className="w-2 h-2 bg-purple-400 rounded-full animate-pulse" />
+      <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
       Demo Data
     </motion.div>
   );
