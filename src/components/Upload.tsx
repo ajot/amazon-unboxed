@@ -132,7 +132,7 @@ export function Upload({
             📦
           </motion.div>
           <h1 className="text-5xl font-bold text-white mb-2">Unboxed</h1>
-          <p className="text-gray-400">Your shopping story awaits</p>
+          <p className="text-gray-400">Your Amazon shopping story, visualized</p>
         </div>
 
         {/* How to Get Your Data - Collapsible */}
@@ -141,7 +141,6 @@ export function Upload({
             onClick={() => setShowDataHelp(!showDataHelp)}
             className="w-full flex items-center justify-center gap-2 py-2 text-sm text-gray-400 hover:text-white transition-colors"
           >
-            <span>📥</span>
             <span>Don't have your data yet?</span>
             <motion.span
               animate={{ rotate: showDataHelp ? 180 : 0 }}
@@ -214,7 +213,7 @@ export function Upload({
                   onClick={onContinueExploring}
                   className="flex-1 py-2 px-4 bg-amazon-orange text-amazon-dark font-semibold rounded-lg hover:bg-amber-500 transition-colors text-sm"
                 >
-                  Explore Data 📊
+                  Explore Data
                 </button>
               )}
               {onViewWrapped && (
@@ -222,7 +221,7 @@ export function Upload({
                   onClick={onViewWrapped}
                   className="flex-1 py-2 px-4 bg-white/10 text-white font-semibold rounded-lg hover:bg-white/20 transition-colors text-sm"
                 >
-                  View Wrapped 🎁
+                  View Wrapped
                 </button>
               )}
             </div>
@@ -262,9 +261,13 @@ export function Upload({
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           />
 
-          <div className="text-5xl mb-4">{isDragging ? '📥' : '📁'}</div>
+          <div className="text-gray-400 mb-4">
+            <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+          </div>
           <p className="text-lg text-white mb-2">
-            {isDragging ? 'Drop files here' : 'Drag & drop your Amazon CSV files'}
+            {isDragging ? 'Drop files here' : 'Drop your Amazon CSV files here'}
           </p>
           <p className="text-sm text-gray-400">or click to browse</p>
 
@@ -409,7 +412,7 @@ export function Upload({
               }
             `}
           >
-            Unbox My Year 🎁
+            Generate My Wrapped
           </motion.button>
         )}
 
@@ -420,10 +423,7 @@ export function Upload({
           transition={{ delay: 0.5 }}
           className="mt-8 p-5 bg-amazon-navy/30 rounded-xl border border-gray-700/50"
         >
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-xl">🔒</span>
-            <h4 className="text-sm font-semibold text-white">100% Private</h4>
-          </div>
+          <h4 className="text-sm font-semibold text-white mb-3">Privacy First</h4>
           <ul className="space-y-2 text-sm text-gray-400">
             <li className="flex items-start gap-2">
               <span className="text-green-400 mt-0.5">✓</span>
