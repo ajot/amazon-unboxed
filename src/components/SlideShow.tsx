@@ -89,7 +89,7 @@ export function SlideShow({ stats, onReset, onExplore, year, availableYears, onY
       });
 
       const link = document.createElement('a');
-      link.download = `amazon-wrapped-${year}-slide-${currentSlide + 1}.png`;
+      link.download = `unboxed-${year}-slide-${currentSlide + 1}.png`;
       link.href = dataUrl;
       link.click();
     } catch (err) {

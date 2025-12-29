@@ -1,8 +1,10 @@
-# Amazon Wrapped
+# Unboxed - Your Amazon year in review.
 
-A Spotify Wrapped-style visualization of your Amazon order history. Upload your Amazon data export and get beautiful, shareable insights about your shopping habits.
+Turn your Amazon order history into a Spotify Wrapped–style recap. See what you bought, how much you spent, your busiest and most expensive months, number of orders and returns.
 
-**Privacy-first**: All data processing happens locally in your browser. Your data never leaves your device.
+**Privacy-first**: All processing happens entirely in your browser — no accounts, no uploads, no servers, no tracking. Your data is stored locally in browser storage so reloads don't require re-uploading files.
+
+**Try it**: [unboxed.curiousmints.com](https://unboxed.curiousmints.com) (includes demo data to explore)
 
 ## Features
 
@@ -16,17 +18,13 @@ A Spotify Wrapped-style visualization of your Amazon order history. Upload your 
   - Digital content stats
   - Returns summary
 
-- **Explore Mode**: Deep dive into your data with:
+- **Explore Dashboard**: Dig into everything with charts and tables
+  - All transactions (searchable, sortable)
   - Monthly spending charts
-  - Sortable order tables
-  - Refund breakdowns
+  - Books breakdown (Kindle, Audible, physical)
+  - Refunds history
 
 - **Share**: Download slides as images to share on social media
-
-- **Time Machine**: View your data from any year
-  - Automatic year detection from uploaded files
-  - Switch between years without re-uploading
-  - Year selector in slideshow navigation and explore mode
 
 ## Tech Stack
 
@@ -58,7 +56,7 @@ npm run build
 1. Go to [Amazon Privacy Central](https://www.amazon.com/hz/privacy-central/data-requests/preview.html)
 2. Click **"Request Your Data"**
 3. Select **"Your Orders"**
-4. Wait for Amazon's email (can take a few days)
+4. Wait for Amazon's email (usually a few hours to a couple of days)
 5. Download and unzip the file
 6. Upload the CSV files — the app auto-detects which is which
 

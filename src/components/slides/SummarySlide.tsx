@@ -99,7 +99,7 @@ export const SummarySlide = forwardRef<HTMLDivElement, Props>(
           transition={{ delay: 0.7 }}
           className="mt-6 pt-4 border-t border-white/20 w-full max-w-xs lg:max-w-lg"
         >
-          <p className="text-white/40 text-xs lg:text-sm mb-4">amazon-wrapped.app</p>
+          <p className="text-white/40 text-xs lg:text-sm mb-4">unboxed.curiousmints.com</p>
 
           <div className="flex flex-col lg:flex-row gap-2 lg:gap-4">
             {onDownload && (

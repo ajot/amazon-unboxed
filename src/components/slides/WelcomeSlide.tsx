@@ -24,8 +24,8 @@ export const WelcomeSlide = forwardRef<HTMLDivElement, Props>(({ year }, ref) =>
         transition={{ delay: 0.5 }}
       >
         <h1 className="text-4xl lg:text-7xl font-bold text-white mb-2">Your</h1>
-        <h1 className="text-4xl lg:text-7xl font-bold text-white mb-2">Amazon</h1>
-        <h1 className="text-4xl lg:text-7xl font-bold text-white">{year}</h1>
+        <h1 className="text-4xl lg:text-7xl font-bold text-white mb-2">{year}</h1>
+        <h1 className="text-4xl lg:text-7xl font-bold text-white">Unboxed</h1>
       </motion.div>
 
       <motion.div

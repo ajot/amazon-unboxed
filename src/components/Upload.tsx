@@ -131,7 +131,7 @@ export function Upload({
           >
             📦
           </motion.div>
-          <h1 className="text-5xl font-bold text-white mb-2">Amazon Wrapped</h1>
+          <h1 className="text-5xl font-bold text-white mb-2">Unboxed</h1>
           <p className="text-gray-400">Your shopping story awaits</p>
         </div>
 
@@ -396,7 +396,7 @@ export function Upload({
               }
             `}
           >
-            Generate My Wrapped 🎁
+            Unbox My Year 🎁
           </motion.button>
         )}
 
