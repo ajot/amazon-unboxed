@@ -1,24 +1,8 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import type { YearlyData } from '../../types';
-import { formatCurrency } from '../../utils/dataProcessor';
+import { formatCurrency, formatWithCurrency } from '../../utils/dataProcessor';
 import { formatTableDate, sortBy, type SortDirection } from '../../utils/tableUtils';
-
-// Format currency with proper symbol based on currency code
-function formatWithCurrency(amount: number, currency?: string): string {
-  const currencyCode = currency || 'USD';
-  try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currencyCode,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  } catch {
-    // Fallback if currency code is invalid
-    return `${currencyCode} ${amount.toLocaleString()}`;
-  }
-}
 
 interface YearlyTransactionsTableProps {
   yearData: YearlyData;

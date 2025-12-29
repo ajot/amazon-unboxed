@@ -88,12 +88,6 @@ export function storeData(
   selectedYear?: number
 ): void {
   try {
-    console.log('[Storage] storeData called:', {
-      processedDataOrders: processedData.orders.length,
-      allOrders: allOrders?.length,
-      allRefunds: allRefunds?.length,
-      selectedYear,
-    });
     // Compute compact yearly summary (always persists, ~1KB)
     const yearlyData = allOrders ? computeYearlySummary(allOrders) : undefined;
 
@@ -142,47 +136,37 @@ export function storeData(
     const jsonData = JSON.stringify(dataToStore);
     // Check size before storing (localStorage limit is ~5MB)
     let sizeInMB = new Blob([jsonData]).size / (1024 * 1024);
-    console.log(`[Storage] Initial data size: ${sizeInMB.toFixed(2)}MB, yearlyData entries: ${yearlyData?.length || 0}`);
 
     if (sizeInMB > 4.5) {
-      console.warn(`[Storage] Data size (${sizeInMB.toFixed(2)}MB) approaching localStorage limit. Dropping parsedFiles.`);
+      // Data too large, progressively drop data to fit
       dataToStore.parsedFiles = undefined;
       const reducedJson = JSON.stringify(dataToStore);
       sizeInMB = new Blob([reducedJson]).size / (1024 * 1024);
-      console.log(`[Storage] After dropping parsedFiles: ${sizeInMB.toFixed(2)}MB`);
 
       if (sizeInMB > 4.5) {
-        console.warn(`[Storage] Still too large (${sizeInMB.toFixed(2)}MB). Dropping allOrders, keeping yearlyData summary.`);
+        // Still too large, drop allOrders but keep yearlyData summary
         dataToStore.allOrders = undefined;
         let finalJson = JSON.stringify(dataToStore);
         let finalSize = new Blob([finalJson]).size / (1024 * 1024);
-        console.log(`[Storage] After dropping allOrders: ${finalSize.toFixed(2)}MB`);
 
-        // If STILL too large, also clear monthlyData orders (keep aggregates only)
         if (finalSize > 4.5) {
-          console.warn(`[Storage] Still too large. Clearing monthlyData orders.`);
+          // Clear monthlyData orders as last resort
           dataToStore.processedData.monthlyData = dataToStore.processedData.monthlyData.map(m => ({
             ...m,
             orders: [],
           }));
           finalJson = JSON.stringify(dataToStore);
-          finalSize = new Blob([finalJson]).size / (1024 * 1024);
-          console.log(`[Storage] After clearing monthlyData orders: ${finalSize.toFixed(2)}MB`);
         }
 
-        // yearlyData stays - it's tiny and ensures All Years chart works
         localStorage.setItem(DATA_STORAGE_KEY, finalJson);
-        console.log('[Storage] Saved with reduced data');
       } else {
         localStorage.setItem(DATA_STORAGE_KEY, reducedJson);
-        console.log('[Storage] Saved without parsedFiles');
       }
     } else {
       localStorage.setItem(DATA_STORAGE_KEY, jsonData);
-      console.log('[Storage] Saved full data');
     }
-  } catch (e) {
-    console.error('[Storage] Failed to store data in localStorage:', e);
+  } catch {
+    // Storage failed silently - data won't persist but app continues working
   }
 }
 
@@ -212,13 +196,10 @@ export function getStoredData(): StoredDataResult | null {
   try {
     const stored = localStorage.getItem(DATA_STORAGE_KEY);
     if (!stored) {
-      console.log('[Storage] No stored data found');
       return null;
     }
-    console.log(`[Storage] Retrieved data size: ${(new Blob([stored]).size / (1024 * 1024)).toFixed(2)}MB`);
 
     const data: StoredData = JSON.parse(stored);
-    console.log(`[Storage] Retrieved: allOrders=${data.allOrders?.length || 0}, yearlyData=${data.yearlyData?.length || 0}, parsedFiles=${data.parsedFiles?.length || 0}`);
 
     // Convert date strings back to Date objects
     const processedData: ProcessedData = {

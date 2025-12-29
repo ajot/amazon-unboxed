@@ -12,7 +12,6 @@ interface Props {
 
 export const TotalSpendSlide = forwardRef<HTMLDivElement, Props>(
   ({ stats, year }, ref) => {
-    console.log('[TotalSpendSlide] hasMixed:', stats.hasMixedCurrencies, 'primary:', stats.primaryCurrency, 'breakdown:', stats.currencyBreakdown);
     return (
       <SlideWrapper ref={ref} gradient="gradient-amber-navy">
         <motion.p

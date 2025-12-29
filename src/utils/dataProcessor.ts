@@ -82,16 +82,12 @@ export function isLikelyBook(productName: string, publisher?: string): boolean {
  * Extract currency from row, checking multiple possible column names
  */
 function extractCurrency(row: Record<string, unknown>): string {
-  // Check various possible column names for currency
   const possibleKeys = ['Currency', 'currency', 'Currency Code', 'CurrencyCode', 'Ordering Currency Code'];
   for (const key of possibleKeys) {
     if (key in row && typeof row[key] === 'string' && row[key]) {
-      const currency = (row[key] as string).trim().toUpperCase();
-      console.log('[Currency] Found:', key, '=', currency);
-      return currency;
+      return (row[key] as string).trim().toUpperCase();
     }
   }
-  console.log('[Currency] Not found, defaulting to USD. Row keys:', Object.keys(row));
   return 'USD';
 }
 
@@ -341,7 +337,7 @@ function filterToTargetYear<T extends { orderDate?: Date; refundDate?: Date }>(
 }
 
 /**
- * Format currency for display
+ * Format currency for display (defaults to USD)
  */
 export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat(LOCALE, {
@@ -350,6 +346,52 @@ export function formatCurrency(amount: number): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount);
+}
+
+/**
+ * Format currency with proper symbol based on currency code
+ */
+export function formatWithCurrency(amount: number, currency?: string): string {
+  const currencyCode = currency || 'USD';
+  try {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currencyCode,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    return `${currencyCode} ${amount.toLocaleString()}`;
+  }
+}
+
+/**
+ * Calculate currency breakdown from orders
+ */
+export interface CurrencyBreakdownResult {
+  currencyBreakdown: { currency: string; amount: number; orderCount: number }[];
+  primaryCurrency: string;
+  hasMixedCurrencies: boolean;
+}
+
+export function calculateCurrencyBreakdown(orders: ProcessedOrder[]): CurrencyBreakdownResult {
+  const currencyMap = new Map<string, { amount: number; orderCount: number }>();
+  for (const order of orders) {
+    const currency = order.currency || 'USD';
+    if (!currencyMap.has(currency)) {
+      currencyMap.set(currency, { amount: 0, orderCount: 0 });
+    }
+    const data = currencyMap.get(currency)!;
+    data.amount += order.totalOwed;
+    data.orderCount += 1;
+  }
+  const currencyBreakdown = Array.from(currencyMap.entries())
+    .map(([currency, data]) => ({ currency, ...data }))
+    .sort((a, b) => b.orderCount - a.orderCount);
+  const primaryCurrency = currencyBreakdown.length > 0 ? currencyBreakdown[0].currency : 'USD';
+  const hasMixedCurrencies = currencyBreakdown.length > 1;
+
+  return { currencyBreakdown, primaryCurrency, hasMixedCurrencies };
 }
 
 /**
@@ -427,8 +469,6 @@ export function calculateStatsWithData(files: ParsedFile[], targetYear: number):
     .sort((a, b) => b.orderCount - a.orderCount);
   const primaryCurrency = currencyBreakdown.length > 0 ? currencyBreakdown[0].currency : 'USD';
   const hasMixedCurrencies = currencyBreakdown.length > 1;
-
-  console.log(`[Currency] Year ${targetYear} breakdown:`, currencyBreakdown, `Primary: ${primaryCurrency}, hasMixed: ${hasMixedCurrencies}`);
 
   // Split by type
   const retailOrders = dedupedOrders.filter((o) => !o.isDigital);

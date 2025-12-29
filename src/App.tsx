@@ -3,7 +3,7 @@ import { Upload } from './components/Upload';
 import { SlideShow } from './components/SlideShow';
 import { EmailGate } from './components/explore/EmailGate';
 import { ExploreDashboard } from './components/explore/ExploreDashboard';
-import { calculateStatsWithData, getAvailableYears } from './utils/dataProcessor';
+import { calculateStatsWithData, getAvailableYears, calculateCurrencyBreakdown } from './utils/dataProcessor';
 import {
   getStoredEmail,
   storeEmail,
@@ -53,12 +53,6 @@ function App() {
       setSelectedYear(targetYear);
 
       const result = calculateStatsWithData(files, targetYear);
-      console.log('[App] Initial processing:', {
-        targetYear,
-        processedDataOrders: result.processedData.orders.length,
-        allOrders: result.allOrders.length,
-        allRefunds: result.allRefunds.length,
-      });
       setStats(result.stats);
       setProcessedData(result.processedData);
       setAllOrders(result.allOrders);
@@ -122,21 +116,7 @@ function App() {
         });
 
         // Currency breakdown (calculate first to filter spending)
-        const currencyMap = new Map<string, { amount: number; orderCount: number }>();
-        for (const order of yearOrders) {
-          const currency = order.currency || 'USD';
-          if (!currencyMap.has(currency)) {
-            currencyMap.set(currency, { amount: 0, orderCount: 0 });
-          }
-          const data = currencyMap.get(currency)!;
-          data.amount += order.totalOwed;
-          data.orderCount += 1;
-        }
-        const currencyBreakdown = Array.from(currencyMap.entries())
-          .map(([currency, data]) => ({ currency, ...data }))
-          .sort((a, b) => b.orderCount - a.orderCount);
-        const primaryCurrency = currencyBreakdown.length > 0 ? currencyBreakdown[0].currency : 'USD';
-        const hasMixedCurrencies = currencyBreakdown.length > 1;
+        const { currencyBreakdown, primaryCurrency, hasMixedCurrencies } = calculateCurrencyBreakdown(yearOrders);
 
         // Filter to primary currency for spending stats when mixed
         const primaryOrders = hasMixedCurrencies
@@ -286,7 +266,6 @@ function App() {
         if (sortedYears.length > 0 && !yearsWithOrders.has(targetYear)) {
           // Switch to most recent year with data
           targetYear = sortedYears[0];
-          console.log('[App] No orders for selected year, switching to:', targetYear);
         }
 
         // Recalculate stats and processedData from allOrders for the target year
@@ -300,21 +279,7 @@ function App() {
           const yearRefunds = (savedData.allRefunds || []).filter(r => r.refundDate.getFullYear() === targetYear);
 
           // Calculate currency breakdown
-          const currencyMap = new Map<string, { amount: number; orderCount: number }>();
-          for (const order of yearOrders) {
-            const currency = order.currency || 'USD';
-            if (!currencyMap.has(currency)) {
-              currencyMap.set(currency, { amount: 0, orderCount: 0 });
-            }
-            const data = currencyMap.get(currency)!;
-            data.amount += order.totalOwed;
-            data.orderCount += 1;
-          }
-          const currencyBreakdown = Array.from(currencyMap.entries())
-            .map(([currency, data]) => ({ currency, ...data }))
-            .sort((a, b) => b.orderCount - a.orderCount);
-          const primaryCurrency = currencyBreakdown.length > 0 ? currencyBreakdown[0].currency : 'USD';
-          const hasMixedCurrencies = currencyBreakdown.length > 1;
+          const { currencyBreakdown, primaryCurrency, hasMixedCurrencies } = calculateCurrencyBreakdown(yearOrders);
 
           // Filter to primary currency for spending stats
           const primaryOrders = hasMixedCurrencies
@@ -392,21 +357,7 @@ function App() {
           const yearRefunds = (savedData.allRefunds || []).filter(r => r.refundDate.getFullYear() === targetYear);
 
           // Calculate currency breakdown
-          const currencyMap = new Map<string, { amount: number; orderCount: number }>();
-          for (const order of yearOrders) {
-            const currency = order.currency || 'USD';
-            if (!currencyMap.has(currency)) {
-              currencyMap.set(currency, { amount: 0, orderCount: 0 });
-            }
-            const data = currencyMap.get(currency)!;
-            data.amount += order.totalOwed;
-            data.orderCount += 1;
-          }
-          const currencyBreakdown = Array.from(currencyMap.entries())
-            .map(([currency, data]) => ({ currency, ...data }))
-            .sort((a, b) => b.orderCount - a.orderCount);
-          const primaryCurrency = currencyBreakdown.length > 0 ? currencyBreakdown[0].currency : 'USD';
-          const hasMixedCurrencies = currencyBreakdown.length > 1;
+          const { currencyBreakdown, primaryCurrency, hasMixedCurrencies } = calculateCurrencyBreakdown(yearOrders);
 
           // Filter to primary currency for spending stats
           const primaryOrders = hasMixedCurrencies
