@@ -11,6 +11,7 @@ import { RefundsView } from './RefundsView';
 import { BooksView } from './BooksView';
 import { DemoBadge } from '../DemoBadge';
 import { formatCurrency, formatNumber, calculateYearlyData, calculateYearlyDataFromOrders } from '../../utils/dataProcessor';
+import { ChevronLeftIcon, ChartIcon } from '../Icons';
 
 type TabType = 'overview' | 'transactions' | 'books' | 'refunds' | 'allyears';
 
@@ -86,12 +87,12 @@ export function ExploreDashboard({
             <div className="flex items-center gap-4">
               <button
                 onClick={onBack}
-                className="text-gray-400 hover:text-white transition-colors"
+                className="text-gray-400 hover:text-white transition-colors flex items-center gap-1"
               >
-                ← Back
+                <ChevronLeftIcon size={16} /> Back
               </button>
-              <h1 className="text-xl font-bold text-white">
-                📊 Data Explorer
+              <h1 className="text-xl font-bold text-white flex items-center gap-2">
+                <ChartIcon size={20} /> Data Explorer
               </h1>
               {isDemoMode && <DemoBadge />}
             </div>

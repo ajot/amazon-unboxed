@@ -17,6 +17,7 @@ import {
   SummarySlide,
 } from './slides';
 import { DemoBadge } from './DemoBadge';
+import { ChevronLeftIcon, ChevronRightIcon, DownloadIcon, ChartIcon, RefreshIcon, SpinnerIcon } from './Icons';
 
 interface SlideShowProps {
   stats: WrappedStats;
@@ -145,13 +146,13 @@ export function SlideShow({ stats, onReset, onExplore, year, availableYears, onY
           prevSlide();
         }}
         disabled={currentSlide === 0}
-        className={`p-3 rounded-full transition-all text-2xl ${
+        className={`p-3 rounded-full transition-all ${
           currentSlide === 0
             ? 'text-white/20 cursor-not-allowed'
             : 'text-white/60 hover:text-white hover:bg-white/10'
         }`}
       >
-        ←
+        <ChevronLeftIcon size={24} />
       </button>
 
       {/* Progress dots */}
@@ -181,13 +182,13 @@ export function SlideShow({ stats, onReset, onExplore, year, availableYears, onY
           nextSlide();
         }}
         disabled={currentSlide === TOTAL_SLIDES - 1}
-        className={`p-3 rounded-full transition-all text-2xl ${
+        className={`p-3 rounded-full transition-all ${
           currentSlide === TOTAL_SLIDES - 1
             ? 'text-white/20 cursor-not-allowed'
             : 'text-white/60 hover:text-white hover:bg-white/10'
         }`}
       >
-        →
+        <ChevronRightIcon size={24} />
       </button>
 
       {/* Download button */}
@@ -197,13 +198,13 @@ export function SlideShow({ stats, onReset, onExplore, year, availableYears, onY
           downloadSlide();
         }}
         disabled={isDownloading}
-        className="p-3 rounded-full text-white/60 hover:text-white hover:bg-white/10 transition-all text-xl"
+        className="p-3 rounded-full text-white/60 hover:text-white hover:bg-white/10 transition-all"
         title="Download slide"
       >
         {isDownloading ? (
-          <span className="animate-spin">⏳</span>
+          <SpinnerIcon size={20} />
         ) : (
-          '📥'
+          <DownloadIcon size={20} />
         )}
       </button>
 
@@ -213,10 +214,10 @@ export function SlideShow({ stats, onReset, onExplore, year, availableYears, onY
           e.stopPropagation();
           onExplore();
         }}
-        className="p-3 rounded-full text-white/60 hover:text-white hover:bg-white/10 transition-all text-xl"
+        className="p-3 rounded-full text-white/60 hover:text-white hover:bg-white/10 transition-all"
         title="Explore your data"
       >
-        📊
+        <ChartIcon size={20} />
       </button>
 
       {/* Year selector */}
@@ -279,9 +280,9 @@ export function SlideShow({ stats, onReset, onExplore, year, availableYears, onY
           e.stopPropagation();
           onReset();
         }}
-        className="fixed bottom-4 right-4 text-sm text-white/30 hover:text-white/60 transition-colors z-50 hidden lg:block"
+        className="fixed bottom-4 right-4 text-sm text-white/30 hover:text-white/60 transition-colors z-50 hidden lg:flex items-center gap-1"
       >
-        Start over ↺
+        Start over <RefreshIcon size={14} />
       </motion.button>
     </div>
   );

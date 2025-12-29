@@ -3,6 +3,7 @@ import { SlideWrapper } from './SlideWrapper';
 import { formatCurrency, formatNumber } from '../../utils/dataProcessor';
 import type { WrappedStats } from '../../types';
 import { forwardRef } from 'react';
+import { DownloadIcon, ChartIcon } from '../Icons';
 
 interface Props {
   stats: WrappedStats;
@@ -110,7 +111,7 @@ export const SummarySlide = forwardRef<HTMLDivElement, Props>(
                 }}
                 className="w-full lg:flex-1 py-3 lg:py-4 px-6 bg-white text-amazon-dark font-semibold text-base lg:text-lg rounded-xl hover:bg-gray-100 transition-colors flex items-center justify-center gap-2"
               >
-                Download 📥
+                Download <DownloadIcon size={20} />
               </button>
             )}
             {onExplore && (
@@ -121,7 +122,7 @@ export const SummarySlide = forwardRef<HTMLDivElement, Props>(
                 }}
                 className="w-full lg:flex-1 py-3 lg:py-4 px-6 bg-amazon-orange text-amazon-dark font-semibold text-base lg:text-lg rounded-xl hover:bg-amber-500 transition-colors flex items-center justify-center gap-2"
               >
-                Explore Your Data 📊
+                Explore Your Data <ChartIcon size={20} />
               </button>
             )}
           </div>

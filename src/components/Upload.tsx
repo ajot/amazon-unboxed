@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import type { ParsedFile } from '../types';
 import { parseMultipleFiles } from '../utils/csvParser';
+import { BoxIcon } from './Icons';
 
 interface UploadProps {
   onFilesProcessed: (files: ParsedFile[]) => void;
@@ -127,9 +128,9 @@ export function Upload({
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: 'spring' }}
-            className="text-7xl mb-4"
+            className="mb-4 text-amazon-orange"
           >
-            📦
+            <BoxIcon size={80} />
           </motion.div>
           <h1 className="text-5xl font-bold text-white mb-2">Unboxed</h1>
           <p className="text-gray-400">Your Amazon shopping story, visualized</p>
@@ -447,11 +448,31 @@ export function Upload({
           </p>
         </motion.div>
 
+        {/* Footer */}
+        <div className="mt-8 pt-6 border-t border-gray-700/30 text-center text-sm text-gray-500">
+          <a
+            href="https://github.com/ajotwani/amazon-unboxed"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-amazon-orange transition-colors"
+          >
+            Open source on GitHub
+          </a>
+          <span className="mx-2">·</span>
+          <span>Made with ☕ by </span>
+          <a
+            href="https://x.com/amit"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-amazon-orange transition-colors"
+          >
+            Amit
+          </a>
+        </div>
+
         {/* Disclaimer */}
-        <p className="mt-6 text-xs text-gray-600 text-center">
-          This project is not affiliated with, endorsed by, or sponsored by Amazon.com, Inc.
-          <br />
-          Amazon and all related trademarks are property of Amazon.com, Inc.
+        <p className="mt-4 text-xs text-gray-600 text-center">
+          Not affiliated with Amazon.com, Inc.
         </p>
       </motion.div>
     </div>
