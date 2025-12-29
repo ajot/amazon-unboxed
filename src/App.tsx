@@ -1,12 +1,9 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Upload } from './components/Upload';
 import { SlideShow } from './components/SlideShow';
-import { EmailGate } from './components/explore/EmailGate';
 import { ExploreDashboard } from './components/explore/ExploreDashboard';
 import { calculateStatsWithData, getAvailableYears, calculateCurrencyBreakdown } from './utils/dataProcessor';
 import {
-  getStoredEmail,
-  storeEmail,
   getStoredData,
   storeData,
   clearStoredData,
@@ -15,13 +12,12 @@ import {
 import type { ParsedFile, WrappedStats, ProcessedData, ProcessedOrder, ProcessedRefund, EnrichedRefund } from './types';
 import './index.css';
 
-type AppView = 'upload' | 'slides' | 'emailGate' | 'explore';
+type AppView = 'upload' | 'slides' | 'explore';
 
 function App() {
   const [view, setView] = useState<AppView>('upload');
   const [stats, setStats] = useState<WrappedStats | null>(null);
   const [processedData, setProcessedData] = useState<ProcessedData | null>(null);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [hasSavedData, setHasSavedData] = useState(false);
   const [parsedFiles, setParsedFiles] = useState<ParsedFile[]>([]);
   const [allOrders, setAllOrders] = useState<ProcessedOrder[]>([]);
@@ -30,9 +26,8 @@ function App() {
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [storedYearlyData, setStoredYearlyData] = useState<StoredYearlyData[] | undefined>(undefined);
 
-  // Check for stored email and data on mount
+  // Check for stored data on mount
   useEffect(() => {
-    setUserEmail(getStoredEmail());
     const savedData = getStoredData();
     if (savedData) {
       setHasSavedData(true);
@@ -231,17 +226,6 @@ function App() {
   }, []);
 
   const handleExplore = useCallback(() => {
-    // If user already has email stored, go directly to explore
-    if (userEmail) {
-      setView('explore');
-    } else {
-      setView('emailGate');
-    }
-  }, [userEmail]);
-
-  const handleEmailSubmit = useCallback((email: string) => {
-    storeEmail(email);
-    setUserEmail(email);
     setView('explore');
   }, []);
 
@@ -323,13 +307,9 @@ function App() {
       setSelectedYear(targetYear);
       if (savedData.yearlyData) setStoredYearlyData(savedData.yearlyData);
 
-      if (userEmail) {
-        setView('explore');
-      } else {
-        setView('slides');
-      }
+      setView('explore');
     }
-  }, [userEmail]);
+  }, []);
 
   // Load saved data and view slides
   const handleViewWrapped = useCallback(() => {
@@ -409,7 +389,6 @@ function App() {
         <Upload
           onFilesProcessed={handleFilesProcessed}
           hasSavedData={hasSavedData}
-          hasEmail={!!userEmail}
           onContinueExploring={handleContinueExploring}
           onViewWrapped={handleViewWrapped}
           onClearData={handleReset}
@@ -424,9 +403,6 @@ function App() {
           availableYears={availableYears}
           onYearChange={handleYearChange}
         />
-      )}
-      {view === 'emailGate' && (
-        <EmailGate onSubmit={handleEmailSubmit} onBack={handleBackToSlides} />
       )}
       {view === 'explore' && stats && processedData && (
         <ExploreDashboard

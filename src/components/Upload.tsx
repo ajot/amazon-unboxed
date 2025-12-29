@@ -6,7 +6,6 @@ import { parseMultipleFiles } from '../utils/csvParser';
 interface UploadProps {
   onFilesProcessed: (files: ParsedFile[]) => void;
   hasSavedData?: boolean;
-  hasEmail?: boolean;
   onContinueExploring?: () => void;
   onViewWrapped?: () => void;
   onClearData?: () => void;
@@ -22,7 +21,6 @@ const FILE_TYPE_LABELS: Record<string, string> = {
 export function Upload({
   onFilesProcessed,
   hasSavedData,
-  hasEmail,
   onContinueExploring,
   onViewWrapped,
   onClearData,
@@ -209,7 +207,7 @@ export function Upload({
               You have saved data from a previous session
             </p>
             <div className="flex gap-2">
-              {hasEmail && onContinueExploring && (
+              {onContinueExploring && (
                 <button
                   onClick={onContinueExploring}
                   className="flex-1 py-2 px-4 bg-amazon-orange text-amazon-dark font-semibold rounded-lg hover:bg-amber-500 transition-colors text-sm"

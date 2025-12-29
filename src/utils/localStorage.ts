@@ -1,30 +1,6 @@
 import type { WrappedStats, ProcessedData, ProcessedOrder, ProcessedRefund, EnrichedRefund, MonthlyData, ParsedFile } from '../types';
 
-const EMAIL_STORAGE_KEY = 'amazon-wrapped-email';
 const DATA_STORAGE_KEY = 'amazon-wrapped-data';
-
-/**
- * Get stored email from localStorage
- */
-export function getStoredEmail(): string | null {
-  try {
-    return localStorage.getItem(EMAIL_STORAGE_KEY);
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Store email in localStorage
- */
-export function storeEmail(email: string): void {
-  try {
-    localStorage.setItem(EMAIL_STORAGE_KEY, email);
-  } catch {
-    console.warn('Failed to store email in localStorage');
-  }
-}
-
 
 // Compact yearly summary for persistence (small footprint)
 interface StoredYearlySummary {

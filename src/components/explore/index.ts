@@ -1,4 +1,3 @@
-export { EmailGate } from './EmailGate';
 export { ExploreDashboard } from './ExploreDashboard';
 export { MonthlySpendingChart } from './MonthlySpendingChart';
 export { MonthlyTransactionsTable } from './MonthlyTransactionsTable';
