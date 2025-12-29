@@ -451,12 +451,22 @@ export function Upload({
         {/* Footer */}
         <div className="mt-8 pt-6 border-t border-gray-700/30 text-center text-sm text-gray-500">
           <a
-            href="https://github.com/ajotwani/amazon-unboxed"
+            href="https://github.com/ajot/amazon-unboxed"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-amazon-orange transition-colors"
           >
             Open source on GitHub
+          </a>
+          <span className="mx-2">·</span>
+          <span>Hosted on </span>
+          <a
+            href="https://www.digitalocean.com/products/app-platform"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-amazon-orange transition-colors"
+          >
+            DigitalOcean
           </a>
           <span className="mx-2">·</span>
           <span>Made with ☕ by </span>
