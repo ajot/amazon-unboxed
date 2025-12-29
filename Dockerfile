@@ -4,6 +4,8 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
+ARG VITE_PLAUSIBLE_SRC
+ENV VITE_PLAUSIBLE_SRC=$VITE_PLAUSIBLE_SRC
 RUN npm run build
 
 # Production stage - serve with nginx
