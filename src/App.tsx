@@ -3,6 +3,7 @@ import { Upload } from './components/Upload';
 import { SlideShow } from './components/SlideShow';
 import { ExploreDashboard } from './components/explore/ExploreDashboard';
 import { calculateStatsWithData, getAvailableYears, calculateCurrencyBreakdown } from './utils/dataProcessor';
+import { loadDemoData } from './utils/demoLoader';
 import {
   getStoredData,
   storeData,
@@ -25,6 +26,7 @@ function App() {
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [storedYearlyData, setStoredYearlyData] = useState<StoredYearlyData[] | undefined>(undefined);
+  const [isDemoMode, setIsDemoMode] = useState(false);
 
   // Check for stored data on mount
   useEffect(() => {
@@ -34,7 +36,7 @@ function App() {
     }
   }, []);
 
-  const handleFilesProcessed = useCallback((files: ParsedFile[]) => {
+  const handleFilesProcessed = useCallback((files: ParsedFile[], isDemo = false) => {
     try {
       // Store raw files for year switching
       setParsedFiles(files);
@@ -52,14 +54,28 @@ function App() {
       setProcessedData(result.processedData);
       setAllOrders(result.allOrders);
       setAllRefunds(result.allRefunds);
-      // Save to localStorage
-      storeData(result.stats, result.processedData, result.allOrders, result.allRefunds, files, years, targetYear);
-      setHasSavedData(true);
+      // Save to localStorage (but not for demo mode)
+      if (!isDemo) {
+        storeData(result.stats, result.processedData, result.allOrders, result.allRefunds, files, years, targetYear);
+        setHasSavedData(true);
+      }
+      setIsDemoMode(isDemo);
       setView('slides');
     } catch (error) {
       console.error('Error calculating stats:', error);
     }
   }, []);
+
+  const handleLoadDemo = useCallback(async () => {
+    try {
+      const demoFiles = await loadDemoData();
+      if (demoFiles.length > 0) {
+        handleFilesProcessed(demoFiles, true);
+      }
+    } catch (error) {
+      console.error('Failed to load demo data:', error);
+    }
+  }, [handleFilesProcessed]);
 
   const handleYearChange = useCallback((year: number) => {
     if (parsedFiles.length === 0 && allOrders.length === 0) return;
@@ -222,6 +238,7 @@ function App() {
     setSelectedYear(new Date().getFullYear());
     clearStoredData();
     setHasSavedData(false);
+    setIsDemoMode(false);
     setView('upload');
   }, []);
 
@@ -392,6 +409,7 @@ function App() {
           onContinueExploring={handleContinueExploring}
           onViewWrapped={handleViewWrapped}
           onClearData={handleReset}
+          onLoadDemo={handleLoadDemo}
         />
       )}
       {view === 'slides' && stats && (
@@ -402,6 +420,7 @@ function App() {
           year={selectedYear}
           availableYears={availableYears}
           onYearChange={handleYearChange}
+          isDemoMode={isDemoMode}
         />
       )}
       {view === 'explore' && stats && processedData && (
@@ -416,6 +435,7 @@ function App() {
           year={selectedYear}
           availableYears={availableYears}
           onYearChange={handleYearChange}
+          isDemoMode={isDemoMode}
         />
       )}
     </div>

@@ -9,6 +9,7 @@ import { YearlyTransactionsTable } from './YearlyTransactionsTable';
 import { AllTransactionsView } from './AllTransactionsView';
 import { RefundsView } from './RefundsView';
 import { BooksView } from './BooksView';
+import { DemoBadge } from '../DemoBadge';
 import { formatCurrency, formatNumber, calculateYearlyData, calculateYearlyDataFromOrders } from '../../utils/dataProcessor';
 
 type TabType = 'overview' | 'transactions' | 'books' | 'refunds' | 'allyears';
@@ -24,6 +25,7 @@ interface ExploreDashboardProps {
   year: number;
   availableYears: number[];
   onYearChange: (year: number) => void;
+  isDemoMode?: boolean;
 }
 
 export function ExploreDashboard({
@@ -37,6 +39,7 @@ export function ExploreDashboard({
   year,
   availableYears,
   onYearChange,
+  isDemoMode,
 }: ExploreDashboardProps) {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
@@ -90,6 +93,7 @@ export function ExploreDashboard({
               <h1 className="text-xl font-bold text-white">
                 📊 Data Explorer
               </h1>
+              {isDemoMode && <DemoBadge />}
             </div>
             <div className="flex items-center gap-4">
               {/* Year selector */}

@@ -9,6 +9,7 @@ interface UploadProps {
   onContinueExploring?: () => void;
   onViewWrapped?: () => void;
   onClearData?: () => void;
+  onLoadDemo?: () => void;
 }
 
 const FILE_TYPE_LABELS: Record<string, string> = {
@@ -24,6 +25,7 @@ export function Upload({
   onContinueExploring,
   onViewWrapped,
   onClearData,
+  onLoadDemo,
 }: UploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [parsedFiles, setParsedFiles] = useState<ParsedFile[]>([]);
@@ -272,6 +274,19 @@ export function Upload({
             </div>
           )}
         </motion.div>
+
+        {/* Try Demo Link */}
+        {onLoadDemo && parsedFiles.length === 0 && (
+          <div className="mt-4 text-center">
+            <span className="text-gray-500 text-sm">or </span>
+            <button
+              onClick={onLoadDemo}
+              className="text-amazon-orange text-sm hover:underline transition-colors"
+            >
+              try with demo data
+            </button>
+          </div>
+        )}
 
         {/* Error Message */}
         {error && (

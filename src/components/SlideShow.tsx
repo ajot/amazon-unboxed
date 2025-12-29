@@ -16,6 +16,7 @@ import {
   ReturnsSlide,
   SummarySlide,
 } from './slides';
+import { DemoBadge } from './DemoBadge';
 
 interface SlideShowProps {
   stats: WrappedStats;
@@ -24,11 +25,12 @@ interface SlideShowProps {
   year: number;
   availableYears: number[];
   onYearChange: (year: number) => void;
+  isDemoMode?: boolean;
 }
 
 const TOTAL_SLIDES = 12;
 
-export function SlideShow({ stats, onReset, onExplore, year, availableYears, onYearChange }: SlideShowProps) {
+export function SlideShow({ stats, onReset, onExplore, year, availableYears, onYearChange, isDemoMode }: SlideShowProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isDownloading, setIsDownloading] = useState(false);
   const slideRef = useRef<HTMLDivElement>(null);
@@ -246,6 +248,13 @@ export function SlideShow({ stats, onReset, onExplore, year, availableYears, onY
       onTouchEnd={handleTouchEnd}
       onClick={currentSlide < TOTAL_SLIDES - 1 ? nextSlide : undefined}
     >
+      {/* Demo mode badge */}
+      {isDemoMode && (
+        <div className="fixed top-4 left-4 z-50">
+          <DemoBadge />
+        </div>
+      )}
+
       {/* Slide container */}
       <AnimatePresence mode="wait">{renderSlide()}</AnimatePresence>
 
